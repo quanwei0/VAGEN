@@ -11,7 +11,8 @@
   <a href="https://arxiv.org/abs/YOUR_ARXIV_ID_HERE"><img src="https://img.shields.io/badge/📜_Paper-B31B1B?style=for-the-badge&logo=arXiv&logoColor=white" alt="Paper"></a>
   <a href="https://vagen.readthedocs.io/en/latest"><img src="https://img.shields.io/badge/📚_Documentation-4285F4?style=for-the-badge&logoColor=white" alt="Documentation"></a>
   <a href="https://mll-lab.notion.site/vagen"><img src="https://img.shields.io/badge/📝_Blog-FF5722?style=for-the-badge&logoColor=white" alt="Blog"></a>
-  <a href="https://api.wandb.ai/links/ragen-V/nlb40e7l"><img src="https://img.shields.io/badge/📊_Experiment_Log-FB8C00?style=for-the-badge&logoColor=white" alt="Experiment Log"></a>
+  <a href="https://wandb.ai/ragen-V/vagen-final/reports/VAGEN-Experimental-Results--VmlldzoxMzM2NzczNA?accessToken=c9539vj7s3yxh8qu4rykmgi1kz47935mu9pvkind70m2tt6bdin6tx263ec7yqei"><img src="https://img.shields.io/badge/📊_Experiment_Log-FB8C00?style=for-the-badge&logoColor=white" alt="Experiment Log"></a>
+  <a href="https://ragen-ai.github.io/vagen-project/"><img src="https://img.shields.io/badge/🌐_Website-00C851?style=for-the-badge&logoColor=white" alt="Website"></a>
 </p>
 
 This repository contains the official implementation of our paper, **"Reinforcing Visual State Reasoning for Multi-Turn VLM Agents"**.
@@ -87,7 +88,7 @@ cd ../
 git clone https://github.com/RAGEN-AI/VAGEN.git
 cd VAGEN
 bash scripts/install.sh
-# This script installs dependencies for Frozenlake and Sokoban, for other environments, please refer to vagen/env/README.md and uncomment the registration in vagen/env/__init__.py
+# This script installs dependencies for Frozenlake and Sokoban, for other environments, please refer to vagen/env/README.md
 ```
 
 
@@ -96,19 +97,15 @@ bash scripts/install.sh
 # Login to wandb
 wandb login
 
-# Then, you can run different environments and algorithms:
+# You can run different environments and algorithms:
+bash scripts/exps/masked_grpo/frozenlake/grounding_worldmodeling/run_tmux.sh
+bash scripts/exps/masked_turn_ppo/sokoban/grounding_worldmodeling/run_tmux.sh
+bash scripts/exps/ppo/maniskill/grounding_worldmodeling_structrued/run_tmux.sh
+bash scripts/exps/finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
 
-#Run a server process in a saperate tmux session if you want to train in env-as-service mode
-python vagen/server/server.py
-
-# Frozen Lake Environment
-bash scripts/examples/frozen_lake_aico/run.sh         # AICO without service
-bash scripts/examples/frozen_lake_trico/run.sh        # TRICO without service
-bash scripts/examples/frozen_lake_aico_service/run.sh # AICO with service
-
-# SVG Generation
-bash scripts/examples/svg_aico/run.sh                 # AICO without service
-bash scripts/examples/svg_trico/run.sh                # TRICO without service
+# Use Visual Reasoning Reward
+# Setup OPENAI_API_KEY in the Environment
+bash scripts/exps/state_reward_finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
 ```
 ## How to Add New Environment and Services
 
@@ -134,13 +131,6 @@ Incorporating **Visual Reasoning RL** leads to improved performance.
 
 ## Cases
 <img width="1261" alt="image" src="https://github.com/user-attachments/assets/59fbce0c-4932-4f82-ab87-d407d84ebad4" />
-
-
-# Project Roadmap
-- 🗓️ May 25, 2025: We release our paper **"Reinforcing Visual State Reasoning for Multi-Turn VLM Agents"** and the VAGEN framework.
-- [ ] Merge to RAGEN for better package mangement
-- [ ] Expand evaluation framework to more diverse visual environments
-- [ ] Scaling to larger models and applying TRICO to text-only tasks
 
 
 ## Acknowledgement
