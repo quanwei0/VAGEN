@@ -39,6 +39,7 @@ from verl.utils.checkpoint.checkpoint_manager import find_latest_ckpt_path
 from verl.utils.dataset.rl_dataset import RLHFDataset, collate_fn
 from torch.utils.data import RandomSampler, SequentialSampler
 from torchdata.stateful_dataloader import StatefulDataLoader
+from tqdm import tqdm
 
 from vagen.rollout.qwen_rollout.rollout_manager import QwenVLRolloutManager
 from vagen.rollout.qwen_rollout.rollout_manager_service import QwenVLRolloutManagerService
@@ -1092,9 +1093,15 @@ class RayPPOTrainer(object):
                 processor=self.processor,
             )
 
+        pbar = tqdm(total=self.total_training_steps, 
+            initial=self.global_steps-1,  # 因为上面 global_steps 已经 +1 了
+            desc="PPO Training",
+            unit="steps")
+
         for epoch in range(self.config.trainer.total_epochs):
             for batch_dict in self.train_dataloader:
                 print(f'global_steps: {self.global_steps}')
+                pbar.set_description(f'PPO Training [Epoch {epoch+1}/{self.config.trainer.total_epochs}]')
                 metrics = {}
                 timing_raw = {}
 
@@ -1227,9 +1234,10 @@ class RayPPOTrainer(object):
                 logger.log(data=metrics, step=self.global_steps)
 
                 self.global_steps += 1
+                pbar.update(1)
 
                 if self.global_steps >= self.total_training_steps:
-
+                    pbar.close()
                     # perform validation after training
                     if self.val_reward_fn is not None:
                         val_metrics = self._validate()
