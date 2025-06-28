@@ -107,6 +107,14 @@ bash scripts/exps/finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
 # Setup OPENAI_API_KEY in the Environment
 bash scripts/exps/state_reward_finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
 ```
+
+# read wandb
+```
+
+wandb sync --view --verbose run-r5iavblg.wandb >> wandb_sync_output.txt
+```
+# run the command to read wandb file
+
 ## How to Add New Environment and Services
 
 See our [Creating Environments](./docs/envs/create-env.md) guide. You may also want to check our [Creating Service](./docs/envs/create-service.md) for scaling your environments.
