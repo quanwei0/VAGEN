@@ -2,6 +2,7 @@
 <p align="center" style="font-size: 20px;">
   <b>Reinforcing Visual State Reasoning for Multi-Turn VLM Agents</b>
 </p>
+
 <p align="center" style="font-size: 16px;">
   Kangrui Wang*, Pingyue Zhang*, Zihan Wang*, Yaning Gao*, Linjie Li*, Qineng Wang, Hanyang Chen, Chi Wan, Yiping Lu, Zhengyuan Yang, Lijuan Wang, Ranjay Krishna, Jiajun Wu, Li Fei-Fei, Yejin Choi, Manling Li
 </p>
@@ -15,11 +16,69 @@
   <a href="https://ragen-ai.github.io/vagen-project/"><img src="https://img.shields.io/badge/🌐_Website-00C851?style=for-the-badge&logoColor=white" alt="Website"></a>
 </p>
 
+<div style="width:100%; overflow-x:auto;">
+  <table style="width:100%;">
+    <tr>
+      <td align="center" style="width:20%;"><b>FrozenLake</b><br>
+        <img src="https://github.com/user-attachments/assets/6d72800a-9b4d-45ec-b528-ac81efb93966" style="width:80%;"/><br>
+        <img src="https://github.com/user-attachments/assets/6f283f99-fa15-4e26-9f99-6649a7d72374" style="width:80%;"/>
+      </td>
+      <td align="center" style="width:20%;"><b>Navigation</b><br>
+        <img src="https://github.com/user-attachments/assets/b364e6c9-4c2c-46d0-afca-ee42f271c59c" style="width:80%;"/><br>
+        <img src="https://github.com/user-attachments/assets/65662eb0-9440-4555-9436-8b9272791ac4" style="width:80%;"/>
+      </td>
+      <td align="center" style="width:20%;"><b>Sokoban</b><br>
+        <img src="https://github.com/user-attachments/assets/145352b5-3a9e-4248-bb94-d3fa46e6c493" style="width:80%;"/><br>
+        <img src="https://github.com/user-attachments/assets/676de052-37d6-4c99-a7eb-200a58d11ed4" style="width:80%;"/>
+      </td>
+      <td align="center" style="width:20%;"><b>ManiSkill</b><br>
+        <img src="https://github.com/user-attachments/assets/c597f17d-5c62-4319-bdaa-b7fa8e4564e1" style="width:80%;"/><br>
+        <img src="https://github.com/user-attachments/assets/f61ea55c-ea79-4ead-9345-45be06d24e81" style="width:80%;"/>
+      </td>
+      <td align="center" style="width:20%;"><b>SVG</b><br>
+        <img src="https://github.com/user-attachments/assets/8646da5f-69be-4283-a078-969f9b8f3f3b" style="width:80%;"/><br>
+        <img src="https://github.com/user-attachments/assets/691b896a-ce30-4acc-ac49-af2d89452bdd" style="width:80%;"/>
+      </td>
+    </tr>
+  </table>
+</div>
+
+<!--
+<table>
+  <tr>
+    <td align="center"><b>FrozenLake</b><br>
+      <img src="https://github.com/user-attachments/assets/6d72800a-9b4d-45ec-b528-ac81efb93966" width="150"/><br>
+      <img src="https://github.com/user-attachments/assets/6f283f99-fa15-4e26-9f99-6649a7d72374" width="150"/>
+    </td>
+    <td align="center"><b>Navigation</b><br>
+      <img src="https://github.com/user-attachments/assets/b364e6c9-4c2c-46d0-afca-ee42f271c59c" width="150"/><br>
+      <img src="https://github.com/user-attachments/assets/65662eb0-9440-4555-9436-8b9272791ac4" width="150"/>
+    </td>
+    <td align="center"><b>Sokoban</b><br>
+      <img src="https://github.com/user-attachments/assets/145352b5-3a9e-4248-bb94-d3fa46e6c493" width="150"/><br>
+      <img src="https://github.com/user-attachments/assets/676de052-37d6-4c99-a7eb-200a58d11ed4" width="150"/>
+    </td>
+    <td align="center"><b>ManiSkill</b><br>
+      <img src="https://github.com/user-attachments/assets/c597f17d-5c62-4319-bdaa-b7fa8e4564e1" width="150"/><br>
+      <img src="https://github.com/user-attachments/assets/f61ea55c-ea79-4ead-9345-45be06d24e81" width="150"/>
+    </td>
+    <td align="center"><b>SVG</b><br>
+      <img src="https://github.com/user-attachments/assets/8646da5f-69be-4283-a078-969f9b8f3f3b" width="150"/><br>
+      <img src="https://github.com/user-attachments/assets/691b896a-ce30-4acc-ac49-af2d89452bdd" width="150"/>
+    </td>
+  </tr>
+</table>
+-->
+
 This repository contains the official implementation of our paper, **"Reinforcing Visual State Reasoning for Multi-Turn VLM Agents"**.
 
 We introduce **VAGEN**, a multi-turn reinforcement learning framework designed specifically for training vision-language model (VLM) agents. Built upon this framework, we propose **Visual Reasoning RL**, a novel reinforcement learning approach that significantly improves the multi-turn performance of VLMs by explicitly supervising their visual state reasoning process.
 
+<!--
 ![bi-level-gae](https://github.com/user-attachments/assets/fbf0ec24-6bb4-40ce-b545-818d83d04e05)
+-->
+![image](https://github.com/user-attachments/assets/834b32fa-9bfc-4e0f-a148-99cd6fc3141e)
+
 
 ## News
 
@@ -34,6 +93,7 @@ We introduce **VAGEN**, a multi-turn reinforcement learning framework designed s
 
 **[2025/03]** We release VAGEN, a multi-turn reinforcement learning framework for training VLM Agents!
 
+<!--
 ## Why Visual Reasoning RL?
 Standard RL methods applied to VLMs struggle with multi-turn agentic tasks due to:
 1. **Visual State Ambiguity**: VLMs lack mechanisms to explicitly interpret and track evolving visual environments.
@@ -44,11 +104,35 @@ Our approach, **Visual Reasoning RL**, addresses these challenges through:
 2. **Reinforcement Learning with Reasoning Rewards**: Reinforces visual understanding with:
    - **Turn-level reasoning rewards** for supervising accuracy.
    - **Bi-Level GAE** for fine-grained credit assignment at both turn and token levels.
+-->
 
-## The VAGEN Framework
+## Why Visual Reasoning RL?
+Standard RL methods applied to VLMs struggle with multi-turn agentic tasks due to:
+1. **Visual State Ambiguity**: VLMs lack mechanisms to explicitly interpret and track evolving visual environments.
+2. **Precision Bottlenecks**: Existing representations fall short in tasks requiring fine-grained spatial or temporal understanding.
 
-We present the framework of **VAGEN** in the image below. The `rollout.py` module facilitates interactions between `ray_trainer.py` and various environments. Our framework operates with two forms of “language”: token sequences (used by the model) and structured information from the environments. `rollout.py` serves as a translator, parsing structured environment data into tokens for the model and converting model outputs back into structured actions or observations. It also records data of each step to form the entire trajectory.
-![framework](https://github.com/user-attachments/assets/183cea78-2345-4b5e-82c5-a0679c5f112a)
+Our approach, **Visual Reasoning RL**, addresses these challenges through:
+
+### Boost #1: Visual Reasoning
+1. **Reasoning Prompts**: Injects structured prompts like grounding (current state description) and world modeling (future state prediction) to scaffold the model’s internal reasoning.
+2. **Reasoning Rewards**: We use LLM-as-Judge to reward the agent when its predicted or observed visual state matches the ground truth.
+
+### Boost #2: Turn-level
+1. **Turn-level reasoning rewards** for supervising accuracy.
+2. **Bi-Level GAE** for fine-grained credit assignment at both turn and token levels.
+
+<table>
+  <tr>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/406cdf7f-79c0-4732-8df1-009c893f3840" width="600"/><br/>
+      <sub>Boost #1: Visual Reasoning</sub>
+    </td>
+    <td align="center">
+      <img src="https://github.com/user-attachments/assets/fbf0ec24-6bb4-40ce-b545-818d83d04e05" width="600"/><br/>
+      <sub>Boost #2: Turn-level</sub>
+    </td>
+  </tr>
+</table>
 
 ## Key Innovations of VAGEN
 
@@ -70,6 +154,17 @@ Traditional RL frameworks for LLM agents treat all tokens in a trajectory equall
 - **State Redundancy**: Visual tasks contain excessive low-level information in long-context inputs
 
 VAGEN addresses these challenges by focusing optimization on the most critical decision-making tokens and creating a more nuanced reward structure across interaction turns.
+
+## The VAGEN Workflow
+
+We present the workflow of **VAGEN** in the image below. The `rollout.py` module facilitates interactions between `ray_trainer.py` and various environments. Our framework operates with two forms of “language”: token sequences (used by the model) and structured information from the environments. `rollout.py` serves as a translator, parsing structured environment data into tokens for the model and converting model outputs back into structured actions or observations. It also records data of each step to form the entire trajectory.
+<!--
+![framework](https://github.com/user-attachments/assets/183cea78-2345-4b5e-82c5-a0679c5f112a)
+-->
+<div align="center">
+  <img src="https://github.com/user-attachments/assets/4cd3752c-e1ad-4cfd-8928-9ef9b0180e5d" width="800"/>
+</div>
+
 
 ## Installation
 
@@ -118,10 +213,22 @@ See our [Creating Environments](./docs/envs/create-env.md) guide. You may also w
 
 ## Experimental Results
 We benchmark closed- and open-sourced models on five environments. Reasoning on visual states, including both grounding and world modeling, can improve the performance. 
+<!--
 <img width="1093" alt="image" src="https://github.com/user-attachments/assets/162820e8-a4f3-49b7-b8f8-c7963a5ac6f1" />
+-->
+<img width="1253" alt="image" src="https://github.com/user-attachments/assets/201d633b-910d-4384-88c9-e1dd0acaa88c" />
+
+
+
 
 Incorporating **Visual Reasoning RL** leads to improved performance.
+<!--
 <img width="1319" alt="image" src="https://github.com/user-attachments/assets/cba16487-c24b-4b25-9ecf-a668d4cd8ac6" />
+-->
+- VAGEN-Base uses the Grounding-WorldModeling reasoning strategy along with format and task-specific rewards.
+- VAGEN-Full builds on this and incorporates Visual Reasoning RL
+<img width="1253" alt="image" src="https://github.com/user-attachments/assets/066adeb0-ef7f-449b-8e01-21fb643eee2b" />
+
 
 ## Environments
 
@@ -130,8 +237,19 @@ Incorporating **Visual Reasoning RL** leads to improved performance.
 
 
 ## Cases
-<img width="1261" alt="image" src="https://github.com/user-attachments/assets/59fbce0c-4932-4f82-ab87-d407d84ebad4" />
 
+### Preview (click to show full cases)
+
+<!--
+<img width="923" alt="image" src="https://github.com/user-attachments/assets/dd412cc2-836b-4d23-81e0-a29d4eaf22b2" />
+<img width="923" alt="image" src="https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7" />
+[![preview](https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7)](https://github.com/user-attachments/assets/dd412cc2-836b-4d23-81e0-a29d4eaf22b2)
+[![preview](https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7)](public/cases_full.png)
+-->
+
+<a href="https://raw.githubusercontent.com/RAGEN-AI/VAGEN/refs/heads/main/public/cases_full.png" target="_blank">
+  <img src="https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7">
+</a>
 
 ## Acknowledgement
 We thank [RAGEN](https://github.com/RAGEN-AI/RAGEN) for its innovative exploration in multi-turn reinforcement learning for LLM agents. We thank [verl](https://github.com/volcengine/verl) for its RL framework. We thank [EasyR1](https://github.com/hiyouga/EasyR1) for adding initial support for VLMs to verl.
