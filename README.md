@@ -108,6 +108,13 @@ bash scripts/exps/finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
 bash scripts/exps/state_reward_finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
 ```
 
+# install conda
+```
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/miniconda3/etc/profile.d/conda.sh
+```
+
 # read wandb
 ```
 
