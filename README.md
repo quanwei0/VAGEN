@@ -174,8 +174,113 @@ We present the workflow of **VAGEN** in the image below. The `rollout.py` module
 ## Installation
 
 ```bash
+# Create a new conda environment
 conda create -n vagen python=3.10 -y
 conda activate vagen
 
+# verl
+git clone https://github.com/JamesKrW/verl.git
+cd verl
+pip install -e .
+cd ../
+
+# vagen
+git clone https://github.com/RAGEN-AI/VAGEN.git
+cd VAGEN
 bash scripts/install.sh
+# This script installs dependencies for Frozenlake and Sokoban, for other environments, please refer to vagen/env/README.md
+```
+
+
+## Usage
+```
+# Login to wandb
+wandb login
+
+# You can run different environments and algorithms:
+bash scripts/examples/masked_grpo/frozenlake/grounding_worldmodeling/run_tmux.sh
+bash scripts/examples/finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
+bash scripts/examples/masked_turn_ppo/frozenlake/grounding_worldmodeling/run_tmux.sh
+
+# Use Visual Reasoning Reward
+# Setup OPENAI_API_KEY in the Environment
+bash scripts/examples/state_reward_finegrained/sokoban/grounding_worldmodeling/run_tmux.sh
+```
+## How to Add New Environment and Services
+
+See our [Creating Environments](./docs/envs/create-env.md) guide. You may also want to check our [Creating Service](./docs/envs/create-service.md) for scaling your environments.
+
+## How to Add New Model
+
+1. Refer to [VERL](https://verl.readthedocs.io/en/latest/index.html) for adding new MLLM.
+2. Refer to [QwenVLRolloutManager](vagen/rollout/qwen_rollout/rollout_manager.py) to understand how rollout works. In most cases, you can use QwenVLRolloutManager directly with only minor modifications to the model's special tokens
+
+## Experimental Results
+We benchmark closed- and open-sourced models on five environments. Reasoning on visual states, including both grounding and world modeling, can improve the performance. 
+<!--
+<img width="1093" alt="image" src="https://github.com/user-attachments/assets/162820e8-a4f3-49b7-b8f8-c7963a5ac6f1" />
+-->
+<img width="1253" alt="image" src="https://github.com/user-attachments/assets/201d633b-910d-4384-88c9-e1dd0acaa88c" />
+
+
+
+
+Incorporating **Visual Reasoning RL** leads to improved performance.
+<!--
+<img width="1319" alt="image" src="https://github.com/user-attachments/assets/cba16487-c24b-4b25-9ecf-a668d4cd8ac6" />
+-->
+- VAGEN-Base uses the Grounding-WorldModeling reasoning strategy along with format and task-specific rewards.
+- VAGEN-Full builds on this and incorporates Visual Reasoning RL
+<img width="1253" alt="image" src="https://github.com/user-attachments/assets/066adeb0-ef7f-449b-8e01-21fb643eee2b" />
+
+
+## Environments
+
+**Note:** VAGEN currently supports several environments: sokoban, frozenlake, svg, navigation, and primitive skill. 
+<img width="1084" alt="image" src="https://github.com/user-attachments/assets/f59f9a65-b93a-44b7-81c1-89df0da91b2e" />
+
+
+## Cases
+
+### Preview (click to show full cases)
+
+<!--
+<img width="923" alt="image" src="https://github.com/user-attachments/assets/dd412cc2-836b-4d23-81e0-a29d4eaf22b2" />
+<img width="923" alt="image" src="https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7" />
+[![preview](https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7)](https://github.com/user-attachments/assets/dd412cc2-836b-4d23-81e0-a29d4eaf22b2)
+[![preview](https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7)](public/cases_full.png)
+-->
+
+<a href="https://raw.githubusercontent.com/RAGEN-AI/VAGEN/refs/heads/main/public/cases_full.png" target="_blank">
+  <img src="https://github.com/user-attachments/assets/d3e07add-5233-46d7-b955-23111ac0c0d7">
+</a>
+
+## Acknowledgement
+We thank [RAGEN](https://github.com/RAGEN-AI/RAGEN) for its innovative exploration in multi-turn reinforcement learning for LLM agents. We thank [verl](https://github.com/volcengine/verl) for its RL framework. We thank [EasyR1](https://github.com/hiyouga/EasyR1) for adding initial support for VLMs to verl.
+
+## References
+[RAGEN](https://github.com/RAGEN-AI/RAGEN): Training Agents by Reinforcing Reasoning
+
+[verl](https://www.notion.so/VAGEN-Training-VLM-Agents-with-Multi-Turn-Reinforcement-Learning-1bfde13afb6e80b792f6d80c7c2fcad0?pvs=21): Volcano Engine Reinforcement Learning for LLM
+
+[ArCHer](https://arxiv.org/abs/2402.19446v1): Hierarchical Multi-Turn RL Agent Training Framework
+
+[Search-R1](https://github.com/PeterGriffinJin/Search-R1): Train your LLMs to reason and call a search engine with reinforcement learning
+
+[Agent-R1](https://github.com/0russwest0/Agent-R1): Training Powerful LLM Agents with End-to-End Reinforcement Learning
+
+[OpenManus-RL](https://github.com/OpenManus/OpenManus-RL): A live stream development of RL tunning for LLM agents
+
+
+## Citation
+
+If you find our framework and paper useful, we appreciate it if you could cite our work:
+
+```bibtex
+@misc{wang2025vagen,
+  title={Reinforcing Visual State Reasoning for Multi-Turn VLM Agents},
+  author={Kangrui Wang* and Pingyue Zhang* and Zihan Wang* and Yaning Gao* and Linjie Li* and Qineng Wang and Hanyang Chen and Chi Wan and Yiping Lu and Zhengyuan Yang and Lijuan Wang and Ranjay Krishna and Jiajun Wu and Li Fei-Fei and Yejin Choi and Manling Li},
+  year={2025},
+  url={https://github.com/RAGEN-AI/VAGEN}
+}
 ```
