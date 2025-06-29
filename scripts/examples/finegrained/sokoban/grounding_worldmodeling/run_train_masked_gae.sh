@@ -33,7 +33,7 @@ python -m vagen.env.create_dataset \
 
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=bi_level_gae \
+    algorithm.adv_estimator=masked_gae \
     algorithm.high_level_gamma=0.95 \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
@@ -77,10 +77,10 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=$EXPERIMENT_NAME \
+    trainer.experiment_name=qw-finegrained-sokoban-grounding_worldmodeling-maksed-gae \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
-    trainer.save_freq=150 \
+    trainer.save_freq=-1 \
     trainer.test_freq=20 \
     trainer.total_training_steps=300 \
     rollout_manager.max_turns=3 \
