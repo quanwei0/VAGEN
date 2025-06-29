@@ -1,6 +1,8 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
+export WANDB_MODE=offline
+
 # Interactive input for port and CUDA devices
 read -p "Enter port number (default: 5000): " PORT_INPUT
 PORT=${PORT_INPUT:-5000}
@@ -116,7 +118,7 @@ tmux send-keys -t "$TRAIN_SESSION" "python3 -m vagen.trainer.main_ppo \\
     trainer.logger=['console','wandb'] \\
     trainer.project_name='vagen_new' \\
     trainer.experiment_name=$EXPERIMENT_NAME \\
-    trainer.n_gpus_per_node=4 \\
+    trainer.n_gpus_per_node=8 \\
     trainer.nnodes=1 \\
     trainer.save_freq=150 \\
     trainer.test_freq=20 \\
