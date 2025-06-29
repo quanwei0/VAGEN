@@ -295,8 +295,8 @@ class DataParallelPPOActor(BasePPOActor):
 
                 self.actor_optimizer.zero_grad()
                 
-                # Store first update log probs for potential second update
-                first_update_log_probs = [] if getattr(self.config, 'off_policy_multi_step', False) else None
+                # Store original old_log_probs for potential second update
+                original_old_log_probs = [] if getattr(self.config, 'off_policy_multi_step', False) else None
 
                 for data in micro_batches:
                     # Support all hardwares
@@ -317,20 +317,20 @@ class DataParallelPPOActor(BasePPOActor):
                         loss_mask = data['loss_mask']
                     else:
                         print("DEBUG: warning, loss_mask not found in actor update")
-                        loss_mask=data["attention_mask"]
+                        loss_mask= data["attention_mask"]
                     response_mask = loss_mask[:, -response_length:]
                     old_log_prob = data['old_log_probs']
                     advantages = data['advantages']
+
+                    # Store original old_log_probs for potential second update
+                    if original_old_log_probs is not None:
+                        original_old_log_probs.append(old_log_prob.detach().clone())
 
                     clip_ratio = self.config.clip_ratio
                     entropy_coeff = self.config.entropy_coeff
 
                     # all return: (bsz, response_length)
                     entropy, log_prob = self._forward_micro_batch(micro_batch=data, temperature=temperature)
-                    
-                    # Store log_prob for potential second update
-                    if first_update_log_probs is not None:
-                        first_update_log_probs.append(log_prob.detach().clone())
 
                     pg_loss, pg_clipfrac, ppo_kl = core_algos.compute_policy_loss(old_log_prob=old_log_prob,
                                                                                   log_prob=log_prob,
@@ -380,10 +380,10 @@ class DataParallelPPOActor(BasePPOActor):
                     # print(f"[DEBUG] Starting second update for batch {batch_idx}")
                     # print("="*100)
                     
-                    # Concatenate first update log probs for this mini-batch
-                    concatenated_first_log_probs = torch.concat(first_update_log_probs, dim=0)
+                    # Concatenate original old_log_probs for this mini-batch
+                    concatenated_original_old_log_probs = torch.concat(original_old_log_probs, dim=0)
                     
-                    # Second round update using first_update_log_probs as old_log_probs
+                    # Second round update using original old_log_probs as old_log_probs
                     if has_multi_modal_inputs:
                         second_micro_batches = mini_batch.select(select_keys, non_tensor_select_keys).chunk(num_micro_batches)
                     elif self.config.use_dynamic_bsz:
@@ -410,9 +410,9 @@ class DataParallelPPOActor(BasePPOActor):
                             loss_mask = micro_data["attention_mask"]
                         response_mask = loss_mask[:, -response_length:]
                         
-                        # Use first update log probs as old_log_probs for second update
+                        # Use original old_log_probs as old_log_probs for second update
                         micro_batch_size = responses.size(0)
-                        old_log_prob = concatenated_first_log_probs[micro_idx:micro_idx+micro_batch_size]
+                        old_log_prob = concatenated_original_old_log_probs[micro_idx:micro_idx+micro_batch_size]
                         micro_idx += micro_batch_size
                         
                         advantages = micro_data['advantages']
