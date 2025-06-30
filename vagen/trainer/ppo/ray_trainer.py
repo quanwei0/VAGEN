@@ -33,7 +33,8 @@ from verl.protocol import pad_dataproto_to_divisor, unpad_dataproto
 from verl.single_controller.base import Worker
 from verl.single_controller.ray import RayResourcePool, RayWorkerGroup, RayClassWithInitArgs
 from verl.single_controller.ray.base import create_colocated_worker_cls
-from verl.trainer.ppo import core_algos
+# from verl.trainer.ppo import core_algos
+from vagen.trainer.ppo import core_algos
 from verl.utils.seqlen_balancing import get_seqlen_balanced_partitions, log_seqlen_unbalance
 from verl.utils.checkpoint.checkpoint_manager import find_latest_ckpt_path
 from verl.utils.dataset.rl_dataset import RLHFDataset, collate_fn
@@ -71,6 +72,8 @@ class AdvantageEstimator(str, Enum):
     REMAX = 'remax'
     RLOO = 'rloo'
     MULTI_TURN_GRPO = 'multi_turn_grpo'
+    BI_LEVEL_GAE_v2 = 'bi_level_gae_v2'
+    WEIGHTED_GAE = 'weighted_gae'
 
 
 @dataclass
@@ -160,7 +163,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         response_mask = attention_mask[:, -response_length:]
         token_level_rewards = data.batch['token_level_rewards']
         gae_mask = data.batch['gae_mask'][:, -response_length:]
-        advantages, returns =core_algos.compute_gae_advantage_return_with_loss_mask(token_level_rewards=token_level_rewards,
+        advantages, returns = core_algos.compute_gae_advantage_return_with_loss_mask(token_level_rewards=token_level_rewards,
                                                                 values=values,
                                                                 loss_mask=gae_mask,
                                                                 gamma=gamma,
@@ -181,6 +184,52 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         else:
             loss_mask=data.batch['attention_mask'][:, -response_length:]
         advantages, returns = core_algos.compute_bi_level_gae_advantage_return(token_level_rewards=data.batch['token_level_rewards'],
+                                                                        values=values,
+                                                                        loss_mask=loss_mask,
+                                                                        gamma=gamma,
+                                                                        lam=lam,
+                                                                        high_level_gamma=high_level_gamma,
+                                                                        reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:])
+        
+        data.batch['advantages'] = advantages
+        data.batch['returns'] = returns
+    elif adv_estimator == AdvantageEstimator.BI_LEVEL_GAE_v2:
+        values = data.batch['values']
+        responses = data.batch['responses']
+        response_length = responses.size(-1)
+        attention_mask = data.batch['attention_mask']
+        response_mask = attention_mask[:, -response_length:]
+        #assert "multi_turn_token_level_rewards" in data.batch.keys()
+        # assert "loss_mask" in data.batch.keys()
+        # loss_mask = data.batch['loss_mask'][:, -response_length:]
+        if "loss_mask" in data.batch.keys():
+            loss_mask = data.batch['loss_mask'][:, -response_length:]
+        else:
+            loss_mask=data.batch['attention_mask'][:, -response_length:]
+        advantages, returns = core_algos.compute_bi_level_gae_advantage_return_v2(token_level_rewards=data.batch['token_level_rewards'],
+                                                                        values=values,
+                                                                        loss_mask=loss_mask,
+                                                                        gamma=gamma,
+                                                                        lam=lam,
+                                                                        high_level_gamma=high_level_gamma,
+                                                                        reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:])
+        
+        data.batch['advantages'] = advantages
+        data.batch['returns'] = returns
+    elif adv_estimator == AdvantageEstimator.WEIGHTED_GAE:
+        values = data.batch['values']
+        responses = data.batch['responses']
+        response_length = responses.size(-1)
+        attention_mask = data.batch['attention_mask']
+        response_mask = attention_mask[:, -response_length:]
+        #assert "multi_turn_token_level_rewards" in data.batch.keys()
+        # assert "loss_mask" in data.batch.keys()
+        # loss_mask = data.batch['loss_mask'][:, -response_length:]
+        if "loss_mask" in data.batch.keys():
+            loss_mask = data.batch['loss_mask'][:, -response_length:]
+        else:
+            loss_mask=data.batch['attention_mask'][:, -response_length:]
+        advantages, returns = core_algos.compute_weighted_cross_level_gae_advantage_return(token_level_rewards=data.batch['token_level_rewards'],
                                                                         values=values,
                                                                         loss_mask=loss_mask,
                                                                         gamma=gamma,
