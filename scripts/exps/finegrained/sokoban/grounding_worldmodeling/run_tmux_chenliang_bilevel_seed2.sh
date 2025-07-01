@@ -2,7 +2,7 @@
 set -e  # Exit immediately if a command exits with a non-zero status
 
 # Interactive input for port and CUDA devices
-PORT=${PORT_INPUT:-4989}
+PORT=${PORT_INPUT:-4995}
 
 CUDA_DEVICES=${CUDA_DEVICES:-0,1,2,3}
 

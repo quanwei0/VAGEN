@@ -2,7 +2,7 @@
 set -e  # Exit immediately if a command exits with a non-zero status
 
 # Interactive input for port and CUDA devices
-PORT=${PORT_INPUT:-4989}
+PORT=${PORT_INPUT:-4975}
 
 CUDA_DEVICES=${CUDA_DEVICES:-0,1,2,3}
 
@@ -98,7 +98,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=lcl_bilevel_ppo_1200_steps \
+    trainer.experiment_name=lcl_bilevel_ppo_1200_steps_seed3 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
