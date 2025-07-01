@@ -140,75 +140,91 @@ def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, 
     return data, metrics
 
 
-def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_repeat=1,high_level_gamma=1.0, high_level_lam=1.0):
+def compute_advantage(
+    data: DataProto,
+    adv_estimator,
+    gamma=1.0,
+    lam=1.0,
+    num_repeat=1,
+    high_level_gamma=1.0,
+    high_level_lam=1.0,
+):
     # prepare response group
     # TODO: add other ways to estimate advantages
     if adv_estimator == AdvantageEstimator.GAE:
-        values = data.batch['values']
-        responses = data.batch['responses']
+        values = data.batch["values"]
+        responses = data.batch["responses"]
         response_length = responses.size(-1)
-        attention_mask = data.batch['attention_mask']
+        attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
-        token_level_rewards = data.batch['token_level_rewards']
-        advantages, returns = core_algos.compute_gae_advantage_return(token_level_rewards=token_level_rewards,
-                                                                    values=values,
-                                                                    eos_mask=response_mask,
-                                                                    gamma=gamma,
-                                                                    lam=lam)
-        data.batch['advantages'] = advantages
-        data.batch['returns'] = returns
+        token_level_rewards = data.batch["token_level_rewards"]
+        advantages, returns = core_algos.compute_gae_advantage_return(
+            token_level_rewards=token_level_rewards,
+            values=values,
+            eos_mask=response_mask,
+            gamma=gamma,
+            lam=lam,
+        )
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.MASKED_GAE:
-        values = data.batch['values']
-        responses = data.batch['responses']
+        values = data.batch["values"]
+        responses = data.batch["responses"]
         response_length = responses.size(-1)
-        attention_mask = data.batch['attention_mask']
+        attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
-        token_level_rewards = data.batch['token_level_rewards']
-        gae_mask = data.batch['gae_mask'][:, -response_length:]
-        advantages, returns = core_algos.compute_gae_advantage_return_with_loss_mask(token_level_rewards=token_level_rewards,
-                                                                values=values,
-                                                                loss_mask=gae_mask,
-                                                                gamma=gamma,
-                                                                lam=lam)
-        data.batch['advantages'] = advantages
-        data.batch['returns'] = returns
+        token_level_rewards = data.batch["token_level_rewards"]
+        gae_mask = data.batch["gae_mask"][:, -response_length:]
+        advantages, returns = core_algos.compute_gae_advantage_return_with_loss_mask(
+            token_level_rewards=token_level_rewards,
+            values=values,
+            loss_mask=gae_mask,
+            gamma=gamma,
+            lam=lam,
+        )
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.BI_LEVEL_GAE:
-        values = data.batch['values']
-        responses = data.batch['responses']
+        values = data.batch["values"]
+        responses = data.batch["responses"]
         response_length = responses.size(-1)
-        attention_mask = data.batch['attention_mask']
+        attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
         # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
-            loss_mask = data.batch['loss_mask'][:, -response_length:]
+            loss_mask = data.batch["loss_mask"][:, -response_length:]
         else:
-            loss_mask=data.batch['attention_mask'][:, -response_length:]
-        advantages, returns = core_algos.compute_bi_level_gae_advantage_return(token_level_rewards=data.batch['token_level_rewards'],
-                                                                        values=values,
-                                                                        loss_mask=loss_mask,
-                                                                        gamma=gamma,
-                                                                        lam=lam,
-                                                                        high_level_gamma=high_level_gamma,
-                                                                        reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:])
+            loss_mask = data.batch["attention_mask"][:, -response_length:]
+        advantages, returns = core_algos.compute_bi_level_gae_advantage_return(
+            token_level_rewards=data.batch["token_level_rewards"],
+            values=values,
+            loss_mask=loss_mask,
+            gamma=gamma,
+            lam=lam,
+            high_level_gamma=high_level_gamma,
+            reward_mask=data.batch["end_of_response_position_mask"][
+                :, -response_length:
+            ],
+        )
 
-        data.batch['advantages'] = advantages
-        data.batch['returns'] = returns
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.BI_LEVEL_GAE_v2:
-        values = data.batch['values']
-        responses = data.batch['responses']
+        values = data.batch["values"]
+        responses = data.batch["responses"]
         response_length = responses.size(-1)
-        attention_mask = data.batch['attention_mask']
+        attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
         # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
-            loss_mask = data.batch['loss_mask'][:, -response_length:]
+            loss_mask = data.batch["loss_mask"][:, -response_length:]
         else:
-            loss_mask=data.batch['attention_mask'][:, -response_length:]
-        
+            loss_mask = data.batch["attention_mask"][:, -response_length:]
+
         advantages, returns = core_algos.compute_bi_level_gae_advantage_return_v2(
             token_level_rewards=data.batch["token_level_rewards"],
             values=values,
@@ -217,84 +233,92 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
             lam=lam,
             high_level_gamma=high_level_gamma,
             high_level_lam=high_level_lam,
-            # reward_mask=data.batch["end_of_response_position_mask"][ :, -response_length:],
+            reward_mask=data.batch["end_of_response_position_mask"][ :, -response_length:],
         )
 
-        data.batch['advantages'] = advantages
-        data.batch['returns'] = returns
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.WEIGHTED_GAE:
-        values = data.batch['values']
-        responses = data.batch['responses']
+        values = data.batch["values"]
+        responses = data.batch["responses"]
         response_length = responses.size(-1)
-        attention_mask = data.batch['attention_mask']
+        attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
         # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
-            loss_mask = data.batch['loss_mask'][:, -response_length:]
+            loss_mask = data.batch["loss_mask"][:, -response_length:]
         else:
-            loss_mask=data.batch['attention_mask'][:, -response_length:]
-        advantages, returns = core_algos.compute_weighted_cross_level_gae_advantage_return(token_level_rewards=data.batch['token_level_rewards'],
-                                                                        values=values,
-                                                                        loss_mask=loss_mask,
-                                                                        gamma=gamma,
-                                                                        lam=lam,
-                                                                        high_level_gamma=high_level_gamma,
-                                                                        high_level_lam=high_level_lam,
-                                                                        # reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:]
-                                                                        )
+            loss_mask = data.batch["attention_mask"][:, -response_length:]
+        advantages, returns = (
+            core_algos.compute_weighted_cross_level_gae_advantage_return(
+                token_level_rewards=data.batch["token_level_rewards"],
+                values=values,
+                loss_mask=loss_mask,
+                gamma=gamma,
+                lam=lam,
+                high_level_gamma=high_level_gamma,
+                high_level_lam=high_level_lam,
+                # reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:]
+            )
+        )
 
-        data.batch['advantages'] = advantages
-        data.batch['returns'] = returns
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.TURN_WISE_GAE:
-        values = data.batch['values']
-        responses = data.batch['responses']
+        values = data.batch["values"]
+        responses = data.batch["responses"]
         response_length = responses.size(-1)
-        attention_mask = data.batch['attention_mask']
+        attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
         # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
-            loss_mask = data.batch['loss_mask'][:, -response_length:]
+            loss_mask = data.batch["loss_mask"][:, -response_length:]
         else:
-            loss_mask=data.batch['attention_mask'][:, -response_length:]
-        advantages, returns = core_algos.compute_turn_wise_gae_advantage_return(token_level_rewards=data.batch['token_level_rewards'],
-                                                                        values=values,
-                                                                        loss_mask=loss_mask,
-                                                                        reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:],
-                                                                        lam=lam,
-                                                                        high_level_gamma=high_level_gamma,
-                                                                        )
+            loss_mask = data.batch["attention_mask"][:, -response_length:]
+        advantages, returns = core_algos.compute_turn_wise_gae_advantage_return(
+            token_level_rewards=data.batch["token_level_rewards"],
+            values=values,
+            loss_mask=loss_mask,
+            reward_mask=data.batch["end_of_response_position_mask"][
+                :, -response_length:
+            ],
+            lam=lam,
+            high_level_gamma=high_level_gamma,
+        )
 
-        data.batch['advantages'] = advantages
-        data.batch['returns'] = returns
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     elif adv_estimator == AdvantageEstimator.GRPO:
-        token_level_rewards = data.batch['token_level_rewards']
-        index = data.non_tensor_batch['uid']
-        responses = data.batch['responses']
+        token_level_rewards = data.batch["token_level_rewards"]
+        index = data.non_tensor_batch["uid"]
+        responses = data.batch["responses"]
         response_length = responses.size(-1)
-        attention_mask = data.batch['attention_mask']
+        attention_mask = data.batch["attention_mask"]
         response_mask = attention_mask[:, -response_length:]
 
         if "loss_mask" in data.batch.keys():
-            loss_mask = data.batch['loss_mask'][:, -response_length:]
+            loss_mask = data.batch["loss_mask"][:, -response_length:]
 
             # valid_token_level_rewards_positions = token_level_rewards[0].nonzero(as_tuple=True)[0]
             # valid_loss_positions = loss_mask[0].nonzero(as_tuple=True)[0]
             # print(f"[DEBUG]valid_token_level_rewards_positions={valid_token_level_rewards_positions}")
             # print(f"[DEBUG]valid_loss_positions={valid_loss_positions}")
             # seems here only need to replace eos_mask with loss_mask
-            advantages, returns = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_rewards,
-                                                                        eos_mask=loss_mask,
-                                                                        index=index)
+            advantages, returns = core_algos.compute_grpo_outcome_advantage(
+                token_level_rewards=token_level_rewards, eos_mask=loss_mask, index=index
+            )
         else:
-            advantages, returns = core_algos.compute_grpo_outcome_advantage(token_level_rewards=token_level_rewards,
-                                                                            eos_mask=response_mask,
-                                                                            index=index)
-        data.batch['advantages'] = advantages
-        data.batch['returns'] = returns
+            advantages, returns = core_algos.compute_grpo_outcome_advantage(
+                token_level_rewards=token_level_rewards,
+                eos_mask=response_mask,
+                index=index,
+            )
+        data.batch["advantages"] = advantages
+        data.batch["returns"] = returns
     # elif adv_estimator == AdvantageEstimator.REINFORCE_PLUS_PLUS:
     #     token_level_rewards = data.batch['token_level_rewards']
     #     responses = data.batch['responses']
