@@ -101,7 +101,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.experiment_name=lcl_bilevel_ppo_1200_steps \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
-    trainer.save_freq=150 \
+    trainer.save_freq=-1 \
     trainer.test_freq=20 \
     trainer.total_training_steps=800 \
     rollout_manager.max_turns=3 \
