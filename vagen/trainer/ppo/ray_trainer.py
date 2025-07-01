@@ -28,6 +28,8 @@ from collections import defaultdict
 import numpy as np
 from codetiming import Timer
 from omegaconf import OmegaConf, open_dict
+from tqdm import tqdm
+
 from verl import DataProto
 from verl.protocol import pad_dataproto_to_divisor, unpad_dataproto
 from verl.single_controller.base import Worker
@@ -138,7 +140,7 @@ def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, 
     return data, metrics
 
 
-def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_repeat=1,high_level_gamma=1.0):
+def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_repeat=1,high_level_gamma=1.0, high_level_lam=1.0):
     # prepare response group
     # TODO: add other ways to estimate advantages
     if adv_estimator == AdvantageEstimator.GAE:
@@ -176,7 +178,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         response_length = responses.size(-1)
         attention_mask = data.batch['attention_mask']
         response_mask = attention_mask[:, -response_length:]
-        #assert "multi_turn_token_level_rewards" in data.batch.keys()
+        # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
@@ -190,7 +192,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                                                                         lam=lam,
                                                                         high_level_gamma=high_level_gamma,
                                                                         reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:])
-        
+
         data.batch['advantages'] = advantages
         data.batch['returns'] = returns
     elif adv_estimator == AdvantageEstimator.BI_LEVEL_GAE_v2:
@@ -199,21 +201,25 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         response_length = responses.size(-1)
         attention_mask = data.batch['attention_mask']
         response_mask = attention_mask[:, -response_length:]
-        #assert "multi_turn_token_level_rewards" in data.batch.keys()
+        # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
             loss_mask = data.batch['loss_mask'][:, -response_length:]
         else:
             loss_mask=data.batch['attention_mask'][:, -response_length:]
-        advantages, returns = core_algos.compute_bi_level_gae_advantage_return_v2(token_level_rewards=data.batch['token_level_rewards'],
-                                                                        values=values,
-                                                                        loss_mask=loss_mask,
-                                                                        gamma=gamma,
-                                                                        lam=lam,
-                                                                        high_level_gamma=high_level_gamma,
-                                                                        reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:])
         
+        advantages, returns = core_algos.compute_bi_level_gae_advantage_return_v2(
+            token_level_rewards=data.batch["token_level_rewards"],
+            values=values,
+            loss_mask=loss_mask,
+            gamma=gamma,
+            lam=lam,
+            high_level_gamma=high_level_gamma,
+            high_level_lam=high_level_lam,
+            # reward_mask=data.batch["end_of_response_position_mask"][ :, -response_length:],
+        )
+
         data.batch['advantages'] = advantages
         data.batch['returns'] = returns
     elif adv_estimator == AdvantageEstimator.WEIGHTED_GAE:
@@ -222,7 +228,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         response_length = responses.size(-1)
         attention_mask = data.batch['attention_mask']
         response_mask = attention_mask[:, -response_length:]
-        #assert "multi_turn_token_level_rewards" in data.batch.keys()
+        # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
@@ -235,8 +241,10 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                                                                         gamma=gamma,
                                                                         lam=lam,
                                                                         high_level_gamma=high_level_gamma,
-                                                                        reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:])
-        
+                                                                        high_level_lam=high_level_lam,
+                                                                        # reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:]
+                                                                        )
+
         data.batch['advantages'] = advantages
         data.batch['returns'] = returns
     elif adv_estimator == AdvantageEstimator.TURN_WISE_GAE:
@@ -245,7 +253,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         response_length = responses.size(-1)
         attention_mask = data.batch['attention_mask']
         response_mask = attention_mask[:, -response_length:]
-        #assert "multi_turn_token_level_rewards" in data.batch.keys()
+        # assert "multi_turn_token_level_rewards" in data.batch.keys()
         # assert "loss_mask" in data.batch.keys()
         # loss_mask = data.batch['loss_mask'][:, -response_length:]
         if "loss_mask" in data.batch.keys():
@@ -259,7 +267,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
                                                                         lam=lam,
                                                                         high_level_gamma=high_level_gamma,
                                                                         )
-        
+
         data.batch['advantages'] = advantages
         data.batch['returns'] = returns
     elif adv_estimator == AdvantageEstimator.GRPO:
@@ -269,12 +277,10 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
         response_length = responses.size(-1)
         attention_mask = data.batch['attention_mask']
         response_mask = attention_mask[:, -response_length:]
-        
-        
-        
+
         if "loss_mask" in data.batch.keys():
             loss_mask = data.batch['loss_mask'][:, -response_length:]
-            
+
             # valid_token_level_rewards_positions = token_level_rewards[0].nonzero(as_tuple=True)[0]
             # valid_loss_positions = loss_mask[0].nonzero(as_tuple=True)[0]
             # print(f"[DEBUG]valid_token_level_rewards_positions={valid_token_level_rewards_positions}")
@@ -327,7 +333,7 @@ def compute_advantage(data: DataProto, adv_estimator, gamma=1.0, lam=1.0, num_re
     #                                                                     index=index)
     #     data.batch['advantages'] = advantages
     #     data.batch['returns'] = returns
-    
+
     else:
         raise NotImplementedError
     return data
@@ -534,7 +540,8 @@ class RayPPOTrainer(object):
             self.kl_ctrl = core_algos.FixedKLController(kl_coef=0.)
 
         if self.config.algorithm.adv_estimator in [AdvantageEstimator.GAE, AdvantageEstimator.BI_LEVEL_GAE,
-                                                   AdvantageEstimator.MASKED_GAE,AdvantageEstimator.TURN_WISE_GAE]:
+                                                   AdvantageEstimator.MASKED_GAE,AdvantageEstimator.TURN_WISE_GAE,AdvantageEstimator.BI_LEVEL_GAE_v2,
+                                                   AdvantageEstimator.WEIGHTED_GAE]:
             self.use_critic = True
         elif self.config.algorithm.adv_estimator in [
                 AdvantageEstimator.GRPO, AdvantageEstimator.REINFORCE_PLUS_PLUS, AdvantageEstimator.REMAX,
@@ -1122,6 +1129,9 @@ class RayPPOTrainer(object):
             if self.config.trainer.get('val_only', False):
                 return
 
+        # add tqdm
+        progress_bar = tqdm(total=self.total_training_steps, initial=self.global_steps, desc="Training Progress")
+
         # we start from step 1
         self.global_steps += 1
 
@@ -1214,6 +1224,7 @@ class RayPPOTrainer(object):
                             batch = batch.union(reward_tensor)
 
                         
+                        
                         if self.config.rollout_manager.use_multi_turn_reward:
                         #VAGEN: TODO: use a new reward_fn to combine the results from reward model and rule-based multi-turn token reward.
                             response_len=batch.batch['responses'].shape[1]
@@ -1239,7 +1250,9 @@ class RayPPOTrainer(object):
                                                   gamma=self.config.algorithm.gamma,
                                                   lam=self.config.algorithm.lam,
                                                   num_repeat=self.config.actor_rollout_ref.rollout.n,
-                                                  high_level_gamma=self.config.algorithm.high_level_gamma,)
+                                                  high_level_gamma=self.config.algorithm.high_level_gamma,
+                                                  high_level_lam=self.config.algorithm.high_level_lam
+                                                  )
 
                     # update critic
                     if self.use_critic:
@@ -1275,10 +1288,11 @@ class RayPPOTrainer(object):
                 # TODO: make a canonical logger that supports various backend
                 logger.log(data=metrics, step=self.global_steps)
 
+                progress_bar.update(1)
                 self.global_steps += 1
 
                 if self.global_steps >= self.total_training_steps:
-
+                    progress_bar.close()
                     # perform validation after training
                     if self.val_reward_fn is not None:
                         val_metrics = self._validate()
