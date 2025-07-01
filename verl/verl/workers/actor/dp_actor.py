@@ -36,6 +36,7 @@ from flash_attn.bert_padding import pad_input, unpad_input, rearrange, index_fir
 __all__ = ['DataParallelPPOActor']
 
 
+
 class DataParallelPPOActor(BasePPOActor):
 
     def __init__(
@@ -295,9 +296,6 @@ class DataParallelPPOActor(BasePPOActor):
 
                 self.actor_optimizer.zero_grad()
                 
-                # Store original old_log_probs for potential second update
-                original_old_log_probs = [] if getattr(self.config, 'off_policy_multi_step', False) else None
-
                 for data in micro_batches:
                     # Support all hardwares
                     if isinstance(data, DataProto):
@@ -321,10 +319,6 @@ class DataParallelPPOActor(BasePPOActor):
                     response_mask = loss_mask[:, -response_length:]
                     old_log_prob = data['old_log_probs']
                     advantages = data['advantages']
-
-                    # Store original old_log_probs for potential second update
-                    if original_old_log_probs is not None:
-                        original_old_log_probs.append(old_log_prob.detach().clone())
 
                     clip_ratio = self.config.clip_ratio
                     entropy_coeff = self.config.entropy_coeff
@@ -362,28 +356,27 @@ class DataParallelPPOActor(BasePPOActor):
                         loss = policy_loss / self.gradient_accumulation
                     loss.backward()
 
-                    data = {
+                    # 记录第一次更新的指标
+                    first_metrics = {
                         'actor/entropy_loss': entropy_loss.detach().item(),
                         'actor/pg_loss': pg_loss.detach().item(),
                         'actor/pg_clipfrac': pg_clipfrac.detach().item(),
                         'actor/ppo_kl': ppo_kl.detach().item(),
                     }
-                    append_to_dict(metrics, data)
+                    append_to_dict(metrics, first_metrics)
 
                 grad_norm = self._optimizer_step()
-                data = {'actor/grad_norm': grad_norm.detach().item()}
-                append_to_dict(metrics, data)
+                metrics['actor/grad_norm'] = grad_norm.detach().item()
+                print(f"[DEBUG] FIRST update COMPLETED with grad_norm: {grad_norm}")
+                print(f"[DEBUG] Model parameters have been updated after first step")
                 
                 # Second update with the same mini-batch (if enabled)
                 if getattr(self.config, 'off_policy_multi_step', False):
-                    # print("="*100)
-                    # print(f"[DEBUG] Starting second update for batch {batch_idx}")
-                    # print("="*100)
+                    print("="*100)
+                    print(f"[DEBUG] Starting SECOND complete update for mini-batch {batch_idx}")
+                    print(f"[DEBUG] Using same data but updated model parameters from first step")
+                    print("="*100)
                     
-                    # Concatenate original old_log_probs for this mini-batch
-                    concatenated_original_old_log_probs = torch.concat(original_old_log_probs, dim=0)
-                    
-                    # Second round update using original old_log_probs as old_log_probs
                     if has_multi_modal_inputs:
                         second_micro_batches = mini_batch.select(select_keys, non_tensor_select_keys).chunk(num_micro_batches)
                     elif self.config.use_dynamic_bsz:
@@ -393,7 +386,6 @@ class DataParallelPPOActor(BasePPOActor):
                     
                     self.actor_optimizer.zero_grad()
                     
-                    micro_idx = 0
                     for micro_data in second_micro_batches:
                         # Support all hardwares
                         if isinstance(micro_data, DataProto):
@@ -410,11 +402,8 @@ class DataParallelPPOActor(BasePPOActor):
                             loss_mask = micro_data["attention_mask"]
                         response_mask = loss_mask[:, -response_length:]
                         
-                        # Use original old_log_probs as old_log_probs for second update
-                        micro_batch_size = responses.size(0)
-                        old_log_prob = concatenated_original_old_log_probs[micro_idx:micro_idx+micro_batch_size]
-                        micro_idx += micro_batch_size
-                        
+                        # Use original old_log_probs directly from micro_data for second update
+                        old_log_prob = micro_data['old_log_probs']
                         advantages = micro_data['advantages']
                         clip_ratio = self.config.clip_ratio
                         entropy_coeff = self.config.entropy_coeff
@@ -445,17 +434,18 @@ class DataParallelPPOActor(BasePPOActor):
                             loss = policy_loss / self.gradient_accumulation
                         loss.backward()
 
-                        data_second = {
+                        # 记录第二次更新的指标
+                        second_metrics = {
                             'actor/entropy_loss_second': entropy_loss.detach().item(),
                             'actor/pg_loss_second': pg_loss.detach().item(),
                             'actor/pg_clipfrac_second': pg_clipfrac.detach().item(),
                             'actor/ppo_kl_second': ppo_kl.detach().item(),
                         }
-                        append_to_dict(metrics, data_second)
+                        append_to_dict(metrics, second_metrics)
                     
-                    # Second optimizer step
                     grad_norm_second = self._optimizer_step()
-                    data_second = {'actor/grad_norm_second': grad_norm_second.detach().item()}
-                    append_to_dict(metrics, data_second)
+                    metrics['actor/grad_norm_second'] = grad_norm_second.detach().item()
+                    print(f"[DEBUG] SECOND update COMPLETED with grad_norm: {grad_norm_second}")
+                    print(f"[DEBUG] Model parameters have been updated after second step")
         self.actor_optimizer.zero_grad()
         return metrics
