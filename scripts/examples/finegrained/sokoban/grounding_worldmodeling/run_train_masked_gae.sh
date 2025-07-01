@@ -37,7 +37,7 @@ python -m vagen.env.create_dataset \
 python3 -m vagen.trainer.main_ppo \
     algorithm.adv_estimator=masked_gae \
     algorithm.high_level_gamma=0.95 \
-    +algorithm.high_level_lam=1 \
+    algorithm.high_level_lam=1 \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
     data.train_batch_size=128 \
