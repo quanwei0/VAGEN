@@ -35,7 +35,7 @@ python -m vagen.env.create_dataset \
 
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=turn_wise_gae \
+    algorithm.adv_estimator=bi_level_gae_v2 \
     algorithm.high_level_gamma=0.95 \
     +algorithm.high_level_lam=1 \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
@@ -76,12 +76,11 @@ python3 -m vagen.trainer.main_ppo \
     critic.ppo_micro_batch_size_per_gpu=1 \
     critic.model.fsdp_config.param_offload=False \
     critic.model.fsdp_config.optimizer_offload=False \
-    critic.use_reward_mask=True \
     algorithm.kl_ctrl.kl_coef=0.001 \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=qw-finegrained-sokoban-grounding_worldmodeling-turn-level-gae \
+    trainer.experiment_name=qw-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-v2 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
