@@ -1,4 +1,8 @@
 #!/bin/bash
+
+# Model path configuration
+MODEL_PATH="/hongpaul-sandbox/temp/VAGEN/VAGEN/Qwen/"
+
 set -e  # Exit immediately if a command exits with a non-zero status
 
 # Interactive input for port and CUDA devices
@@ -64,7 +68,7 @@ python3 -m vagen.trainer.main_ppo \
     data.max_trajectory_length=2400 \
     data.image_key=images \
     data.truncation=left \
-    actor_rollout_ref.model.path=Qwen/Qwen2.5-VL-3B-Instruct \
+    actor_rollout_ref.model.path=$MODEL_PATH \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
     actor_rollout_ref.actor.ppo_mini_batch_size=32 \
@@ -89,7 +93,7 @@ python3 -m vagen.trainer.main_ppo \
     actor_rollout_ref.rollout.temperature=0.7 \
     critic.optim.lr=1e-5 \
     critic.model.use_remove_padding=True \
-    critic.model.path=Qwen/Qwen2.5-VL-3B-Instruct \
+    critic.model.path=$MODEL_PATH \
     critic.model.enable_gradient_checkpointing=True \
     critic.ppo_micro_batch_size_per_gpu=1 \
     critic.model.fsdp_config.param_offload=False \
