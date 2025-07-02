@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
-export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
-export WANDB_ENTITY="rl_agent"
+# export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
+# export WANDB_ENTITY="rl_agent"
 
 # Interactive input for port and CUDA devices
 read -p "Enter port number (default: 5000): " PORT_INPUT

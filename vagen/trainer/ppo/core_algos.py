@@ -175,6 +175,7 @@ def compute_bi_level_gae_advantage_return_v2(
     high_level_gamma: float,
     high_level_lam: float,
     reward_mask: torch.Tensor,
+    turn_reward_aggregation="sparse",
 ):
     """Modified GAE calculation that compute two level of advantage and return:
     high level: per-turn wise
@@ -230,7 +231,13 @@ def compute_bi_level_gae_advantage_return_v2(
             for i in range(len(turn_start_pos) - 1, -1, -1):
                 curr_pos = turn_start_pos[i]
                 curr_turn_reward_pos = reward_pos[i]
-                
+
+                if turn_reward_aggregation == "sparse":
+                    curr_turn_reward = token_level_rewards[b, curr_turn_reward_pos]
+                elif turn_reward_aggregation == "average":
+                    curr_turn_reward = token_level_rewards[b, curr_turn_reward_pos] + token_level_rewards[b, curr_pos: curr_turn_reward_pos].mean()
+                elif turn_reward_aggregation == "sum":
+                    curr_turn_reward = token_level_rewards[b, curr_pos:curr_turn_reward_pos+1].sum()
                 # Get the next value
                 if i < len(turn_start_pos) - 1:
                     # Next valid position
@@ -238,14 +245,14 @@ def compute_bi_level_gae_advantage_return_v2(
                     nextvalue = values[b, next_pos]
 
                     # Calculate delta using the next valid token
-                    delta = token_level_rewards[b, curr_turn_reward_pos] + high_level_gamma * nextvalue - values[b, curr_pos]
+                    delta = curr_turn_reward + high_level_gamma * nextvalue - values[b, curr_pos]
 
                 else:
                     # Last valid position
                     nextvalue = 0.0
 
                     # Calculate delta using the next valid token
-                    delta = token_level_rewards[b, curr_turn_reward_pos] + high_level_gamma * nextvalue - values[b, curr_pos]
+                    delta = curr_turn_reward + high_level_gamma * nextvalue - values[b, curr_pos]
 
                 # Update advantage estimate
                 lastgaelam = delta + high_level_gamma * high_level_lam * lastgaelam
@@ -779,15 +786,18 @@ if __name__ == "__main__":
     lam = random.uniform(0.0, 1.0)
     high_level_gamma = random.uniform(0.0, 1.0)
 
+    gamma = 1
+    lam = 1
+    high_level_gamma = 1
     # rewards = torch.tensor([
     #     [ 0.0, 0.0, 0.1, 0.1, 0.1, 0.0, 0.0, 0.1, 1.0]
     # ], dtype=torch.float)
     sparse_rewards = torch.tensor(
-        [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0]], dtype=torch.float
+        [[0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0]], dtype=torch.float
     )
 
     step_rewards = torch.tensor(
-        [[0.0, 0.0, 0.0, 0.0, 0.5, 0.0, 0.0, 0.0, 1.0]], dtype=torch.float
+        [[0.0, 0.0, 0.1, 0.2, 0.5, 0.0, 0.0, 0.8, 1.0, 0.0, 0.0]], dtype=torch.float
     )
 
     values1 = torch.tensor(
@@ -802,6 +812,8 @@ if __name__ == "__main__":
                 random.random(),
                 7.0,
                 9.0,
+                random.random(),
+                random.uniform(0.0, 100.0),
             ]
         ],
         dtype=torch.float,
@@ -819,14 +831,16 @@ if __name__ == "__main__":
                 random.uniform(0.0, 100.0),
                 7.0,
                 9.0,
+                random.random(),
+                random.uniform(0.0, 100.0),
             ]
         ],
         dtype=torch.float,
     )
 
-    eos_mask = torch.tensor([[0, 0, 1, 1, 1, 0, 0, 1, 1]], dtype=torch.float)
+    eos_mask = torch.tensor([[0, 0, 1, 1, 1, 0, 0, 1, 1, 0,0]], dtype=torch.float)
 
-    reward_mask = torch.tensor([[0, 0, 0, 0, 1, 0, 0, 0, 1]], dtype=torch.float)
+    reward_mask = torch.tensor([[0, 0, 0, 0, 1, 0, 0, 0, 1, 0 ,0]], dtype=torch.float)
     # adv1, ret1 = compute_bi_level_gae_advantage_return(rewards, values1, eos_mask, gamma=1, lam=1, high_level_gamma=1, loss_mask=eos_mask)
     # adv2, ret2 = compute_bi_level_gae_advantage_return(rewards, values2, eos_mask, gamma, lam, high_level_gamma=0.95, loss_mask=eos_mask, high_level_lam=1.0)
     # adv1, ret1 = compute_weighted_cross_level_gae_advantage_return(rewards, values1, eos_mask, gamma=1, lam=1, high_level_gamma=1, loss_mask=eos_mask, high_level_lam=1, turn_level_weight=0)
@@ -845,37 +859,37 @@ if __name__ == "__main__":
     #                                                      loss_mask=eos_mask, lam=lam, high_level_gamma=1.0)
 
     ##### Bi-level GAE Advantage Return
-    # adv1, ret1 = compute_bi_level_gae_advantage_return(token_level_rewards=sparse_rewards,
-    #                                                      reward_mask=reward_mask,values=values1,gamma=gamma,
-    #                                                      loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma)
+    adv1, ret1 = compute_bi_level_gae_advantage_return(token_level_rewards=sparse_rewards,
+                                                         reward_mask=reward_mask,values=values1,gamma=gamma,
+                                                         loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma)
     # adv2, ret2 = compute_bi_level_gae_advantage_return(token_level_rewards=sparse_rewards,
     #                                                      reward_mask=reward_mask,values=values2,gamma=gamma,
     #                                                      loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma)
 
     ##### Turn-wise GAE Advantage Return
-    adv1, ret1 = compute_turn_wise_gae_advantage_return(
-        token_level_rewards=sparse_rewards,
-        reward_mask=reward_mask,
-        values=values1,
-        loss_mask=eos_mask,
-        lam=lam,
-        high_level_gamma=high_level_gamma,
-    )
-    adv2, ret2 = compute_turn_wise_gae_advantage_return(
-        token_level_rewards=sparse_rewards,
-        reward_mask=reward_mask,
-        values=values2,
-        loss_mask=eos_mask,
-        lam=lam,
-        high_level_gamma=high_level_gamma,
-    )
+    # adv1, ret1 = compute_turn_wise_gae_advantage_return(
+    #     token_level_rewards=sparse_rewards,
+    #     reward_mask=reward_mask,
+    #     values=values1,
+    #     loss_mask=eos_mask,
+    #     lam=lam,
+    #     high_level_gamma=high_level_gamma,
+    # )
+    # adv2, ret2 = compute_turn_wise_gae_advantage_return(
+    #     token_level_rewards=sparse_rewards,
+    #     reward_mask=reward_mask,
+    #     values=values2,
+    #     loss_mask=eos_mask,
+    #     lam=lam,
+    #     high_level_gamma=high_level_gamma,
+    # )
 
     ### Our Bi-level GAE Advantage Return
 
     # adv1, ret1 = compute_bi_level_gae_advantage_return_v2(token_level_rewards=step_rewards,values=values1,gamma=gamma,
-    #                                                      loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma,high_level_lam=lam, loss_mask=eos_mask)
-    # adv2, ret2 = compute_bi_level_gae_advantage_return_v2(token_level_rewards=step_rewards,values=values2,gamma=gamma,
-    #                                                      loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma,high_level_lam=lam, loss_mask=eos_mask)
+    #                                                      loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma,high_level_lam=lam, reward_mask=reward_mask)
+    adv2, ret2 = compute_bi_level_gae_advantage_return_v2(token_level_rewards=step_rewards,values=values2,gamma=gamma,
+                                                         loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma,high_level_lam=lam, reward_mask=reward_mask, turn_reward_aggregation="average")
 
     # adv2, ret2 = compute_bi_level_gae_advantage_return(token_level_rewards=rewards, values=values1, reward_mask=reward_mask, loss_mask=eos_mask, high_level_gamma=1,gamma=1, lam=1)
     # adv2, ret2 = compute_gae_advantage_return_with_loss_mask(

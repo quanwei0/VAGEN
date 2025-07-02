@@ -38,7 +38,7 @@ python3 -m vagen.trainer.main_ppo \
     algorithm.adv_estimator=bi_level_gae_v2 \
     algorithm.high_level_gamma=0.95 \
     +algorithm.high_level_lam=1 \
-    +algorithm.turn_reward_aggregation=sparse \
+    +algorithm.turn_reward_aggregation=sum \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
     data.train_batch_size=128 \
@@ -81,7 +81,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-v2 \
+    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-v2-sum \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \

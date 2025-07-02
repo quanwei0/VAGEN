@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
-# export WANDB_ENTITY="rl_agent"
+export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
+export WANDB_ENTITY="rl_agent"
 
 # Interactive input for port and CUDA devices
 read -p "Enter port number (default: 5000): " PORT_INPUT
@@ -35,10 +35,9 @@ python -m vagen.env.create_dataset \
 
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=bi_level_gae_v2 \
+    algorithm.adv_estimator=turn_wise_gae \
     algorithm.high_level_gamma=0.95 \
     +algorithm.high_level_lam=1 \
-    +algorithm.turn_reward_aggregation=sparse \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
     data.train_batch_size=128 \
@@ -77,11 +76,12 @@ python3 -m vagen.trainer.main_ppo \
     critic.ppo_micro_batch_size_per_gpu=1 \
     critic.model.fsdp_config.param_offload=False \
     critic.model.fsdp_config.optimizer_offload=False \
+    critic.use_reward_mask=True \
     algorithm.kl_ctrl.kl_coef=0.001 \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-v2 \
+    trainer.experiment_name=qw-finegrained-sokoban-grounding_worldmodeling-turn-level-gae \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
