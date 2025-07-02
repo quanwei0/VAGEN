@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Model path configuration
-MODEL_PATH="/hongpaul-sandbox/temp/VAGEN/VAGEN/Qwen/"
+MODEL_PATH="/code/hongpaul-sandbox/temp/VAGEN/VAGEN/Qwen/Qwen2.5-VL-3B-Instruct"
 
 set -e  # Exit immediately if a command exits with a non-zero status
 
