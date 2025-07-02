@@ -162,6 +162,7 @@ algorithm:
   gamma: 1.0
   high_level_gamma: 0.99
   high_level_lam: 1
+  turn_level_weight: 0.1
   lam: 1.0
   adv_estimator: gae
   kl_penalty: kl  # how to estimate kl divergence

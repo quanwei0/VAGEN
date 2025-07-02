@@ -148,6 +148,7 @@ def compute_advantage(
     num_repeat=1,
     high_level_gamma=1.0,
     high_level_lam=1.0,
+    turn_level_weight=0.1
 ):
     # prepare response group
     # TODO: add other ways to estimate advantages
@@ -204,9 +205,7 @@ def compute_advantage(
             gamma=gamma,
             lam=lam,
             high_level_gamma=high_level_gamma,
-            reward_mask=data.batch["end_of_response_position_mask"][
-                :, -response_length:
-            ],
+            reward_mask=data.batch["end_of_response_position_mask"][:, -response_length:],
         )
 
         data.batch["advantages"] = advantages
@@ -233,7 +232,7 @@ def compute_advantage(
             lam=lam,
             high_level_gamma=high_level_gamma,
             high_level_lam=high_level_lam,
-            reward_mask=data.batch["end_of_response_position_mask"][ :, -response_length:],
+            reward_mask=data.batch["end_of_response_position_mask"][:, -response_length:],
         )
 
         data.batch["advantages"] = advantages
@@ -251,17 +250,17 @@ def compute_advantage(
             loss_mask = data.batch["loss_mask"][:, -response_length:]
         else:
             loss_mask = data.batch["attention_mask"][:, -response_length:]
-        advantages, returns = (
-            core_algos.compute_weighted_cross_level_gae_advantage_return(
-                token_level_rewards=data.batch["token_level_rewards"],
-                values=values,
-                loss_mask=loss_mask,
-                gamma=gamma,
-                lam=lam,
-                high_level_gamma=high_level_gamma,
-                high_level_lam=high_level_lam,
-                # reward_mask=data.batch['end_of_response_position_mask'][:, -response_length:]
-            )
+
+        advantages, returns = core_algos.compute_weighted_cross_level_gae_advantage_return(
+            token_level_rewards=data.batch["token_level_rewards"],
+            values=values,
+            loss_mask=loss_mask,
+            gamma=gamma,
+            lam=lam,
+            high_level_gamma=high_level_gamma,
+            high_level_lam=high_level_lam,
+            reward_mask=data.batch["end_of_response_position_mask"][ :, -response_length:],
+            turn_weight=turn_level_weight,
         )
 
         data.batch["advantages"] = advantages
@@ -1275,7 +1274,8 @@ class RayPPOTrainer(object):
                                                   lam=self.config.algorithm.lam,
                                                   num_repeat=self.config.actor_rollout_ref.rollout.n,
                                                   high_level_gamma=self.config.algorithm.high_level_gamma,
-                                                  high_level_lam=self.config.algorithm.high_level_lam
+                                                  high_level_lam=self.config.algorithm.high_level_lam,
+                                                  turn_level_weight=self.config.algorithm.turn_level_weight,
                                                   )
 
                     # update critic
