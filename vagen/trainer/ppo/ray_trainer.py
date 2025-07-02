@@ -260,7 +260,7 @@ def compute_advantage(
             high_level_gamma=high_level_gamma,
             high_level_lam=high_level_lam,
             reward_mask=data.batch["end_of_response_position_mask"][ :, -response_length:],
-            turn_weight=turn_level_weight,
+            turn_level_weight=turn_level_weight,
         )
 
         data.batch["advantages"] = advantages
