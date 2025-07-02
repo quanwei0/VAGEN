@@ -889,7 +889,7 @@ if __name__ == "__main__":
     # adv1, ret1 = compute_bi_level_gae_advantage_return_v2(token_level_rewards=step_rewards,values=values1,gamma=gamma,
     #                                                      loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma,high_level_lam=lam, reward_mask=reward_mask)
     adv2, ret2 = compute_bi_level_gae_advantage_return_v2(token_level_rewards=step_rewards,values=values2,gamma=gamma,
-                                                         loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma,high_level_lam=lam, reward_mask=reward_mask, turn_reward_aggregation="average")
+                                                         loss_mask=eos_mask, lam=lam, high_level_gamma=high_level_gamma,high_level_lam=lam, reward_mask=reward_mask, turn_reward_aggregation="sparse")
 
     # adv2, ret2 = compute_bi_level_gae_advantage_return(token_level_rewards=rewards, values=values1, reward_mask=reward_mask, loss_mask=eos_mask, high_level_gamma=1,gamma=1, lam=1)
     # adv2, ret2 = compute_gae_advantage_return_with_loss_mask(
