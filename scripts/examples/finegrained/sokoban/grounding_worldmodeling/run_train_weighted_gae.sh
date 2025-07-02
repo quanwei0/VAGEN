@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
-# export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
-# export WANDB_ENTITY="rl_agent"
+export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
+export WANDB_ENTITY="rl_agent"
 
 # Interactive input for port and CUDA devices
 read -p "Enter port number (default: 5000): " PORT_INPUT
@@ -35,7 +35,7 @@ python -m vagen.env.create_dataset \
 
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=bi_level_gae \
+    algorithm.adv_estimator=weighted_gae \
     algorithm.high_level_gamma=0.95 \
     algorithm.high_level_lam=1 \
     algorithm.turn_level_weight=0.1 \
@@ -81,7 +81,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=qw-finegrained-sokoban-grounding_worldmodeling-bilevel-gae \
+    trainer.experiment_name=qw-finegrained-sokoban-grounding_worldmodeling-weighted-gae-weight0.1 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \

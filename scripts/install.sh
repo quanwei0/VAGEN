@@ -3,6 +3,11 @@ set -e
 
 echo "Starting installation process..."
 
+wget https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86_64.sh
+bash Miniconda3-latest-Linux-x86_64.sh
+source ~/miniconda3/etc/profile.d/conda.sh
+conda activate ragen
+
 echo "Initializing git submodules..."
 git submodule update --init
 

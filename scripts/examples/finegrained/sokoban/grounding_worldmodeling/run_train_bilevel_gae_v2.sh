@@ -37,7 +37,8 @@ python -m vagen.env.create_dataset \
 python3 -m vagen.trainer.main_ppo \
     algorithm.adv_estimator=bi_level_gae_v2 \
     algorithm.high_level_gamma=0.95 \
-    +algorithm.high_level_lam=1 \
+    algorithm.high_level_lam=1 \
+    algorithm.turn_level_weight=0.1 \
     +algorithm.turn_reward_aggregation=sparse \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
