@@ -36,7 +36,6 @@ from flash_attn.bert_padding import pad_input, unpad_input, rearrange, index_fir
 __all__ = ['DataParallelPPOActor']
 
 
-
 class DataParallelPPOActor(BasePPOActor):
 
     def __init__(
@@ -250,15 +249,100 @@ class DataParallelPPOActor(BasePPOActor):
 
         return log_probs
 
+    def _filter_data_by_reward(self, data: DataProto) -> DataProto:
+        """
+        Filter data based on token level reward sum.
+        Select lowest batch//4 and highest batch//4 trajectories.
+        
+        Args:
+            data (DataProto): Original data containing rewards
+            
+        Returns:
+            DataProto: Filtered data with selected trajectories
+        """
+        # 直接使用token_level_rewards字段进行筛选
+        rewards = data.batch['token_level_rewards']
+        
+        # 计算每个trajectory的reward sum
+        if rewards.dim() == 2:  # (batch_size, response_length)
+            reward_sums = rewards.sum(dim=1)  # shape: (batch_size,)
+        else:  # (batch_size,) - already summed
+            reward_sums = rewards
+        
+        batch_size = reward_sums.size(0)
+        select_size = max(1, batch_size // 4)  # 确保至少选择1个
+        
+        # 获取最低和最高reward的indices
+        _, sorted_indices = torch.sort(reward_sums)
+        lowest_indices = sorted_indices[:select_size]
+        highest_indices = sorted_indices[-select_size:]
+        
+        # 合并indices并排序以保持原始顺序
+        selected_indices = torch.cat([lowest_indices, highest_indices])
+        selected_indices, _ = torch.sort(selected_indices)
+        
+        print(f"[DEBUG] Filtering: batch_size={batch_size}, select_size={select_size}")
+        print(f"[DEBUG] Selected indices: {selected_indices.tolist()}")
+        print(f"[DEBUG] Reward sums - lowest: {reward_sums[lowest_indices].tolist()}")
+        print(f"[DEBUG] Reward sums - highest: {reward_sums[highest_indices].tolist()}")
+        
+        # 筛选tensor数据 - 只处理tensor数据
+        filtered_tensors = {}
+        for key, value in data.batch.items():
+            if isinstance(value, torch.Tensor):
+                filtered_tensors[key] = value[selected_indices]
+        
+        # 筛选非tensor数据
+        filtered_non_tensors = {}
+        for key, value in data.non_tensor_batch.items():
+            if hasattr(value, '__getitem__') and hasattr(value, '__len__'):
+                # 对于numpy数组，使用numpy索引
+                if hasattr(value, 'dtype') and hasattr(value, 'shape'):
+                    filtered_non_tensors[key] = value[selected_indices.cpu().numpy()]
+                else:
+                    # 对于其他可索引对象，转换为list进行索引
+                    filtered_non_tensors[key] = [value[i] for i in selected_indices.tolist()]
+            else:
+                filtered_non_tensors[key] = value
+        
+        # 更新meta_info
+        filtered_meta_info = data.meta_info.copy()
+        
+        # 构造新的DataProto - 使用from_dict方法来正确创建TensorDict
+        from verl import DataProto
+        filtered_data = DataProto.from_dict(tensors=filtered_tensors, 
+                                           non_tensors=filtered_non_tensors,
+                                           meta_info=filtered_meta_info)
+        
+        return filtered_data
+
     def update_policy(self, data: DataProto):
+        
         # make sure we are in training mode
         self.actor_module.train()
-        
-        # Save original data for second update
-        original_data = data
 
         temperature = data.meta_info['temperature']  # temperature must be in the data.meta_info to avoid slient error
 
+        # 检查是否启用数据筛选
+        use_filtering = getattr(self.config, 'filtering', False)
+        # breakpoint()
+        use_filtering = True
+        if use_filtering:
+            print(f"[DEBUG] Data filtering enabled, original batch size: {data.batch.batch_size[0] if hasattr(data.batch, 'batch_size') else 'unknown'}")
+            # 检查是否有token_level_rewards字段
+            if 'token_level_rewards' not in data.batch.keys():
+                print(f"[WARNING] Filtering enabled but 'token_level_rewards' field not found in data.")
+                print(f"[WARNING] Proceeding without filtering...")
+                use_filtering = False
+        if use_filtering:
+            try:
+                data = self._filter_data_by_reward(data)
+                print(f"[DEBUG] Data filtered successfully, new batch size: {data.batch.batch_size[0] if hasattr(data.batch, 'batch_size') else 'unknown'}")
+            except Exception as e:
+                print(f"[ERROR] Data filtering failed: {e}")
+                print(f"[WARNING] Proceeding without filtering...")
+                use_filtering = False
+        # breakpoint()
         if 'loss_mask' in data.batch.keys():
             select_keys = ['responses', 'input_ids', 'attention_mask', 'position_ids', 'old_log_probs', 'advantages','loss_mask']
         else:
@@ -295,7 +379,7 @@ class DataParallelPPOActor(BasePPOActor):
                     micro_batches = mini_batch.split(self.config.ppo_micro_batch_size_per_gpu)
 
                 self.actor_optimizer.zero_grad()
-                
+
                 for data in micro_batches:
                     # Support all hardwares
                     if isinstance(data, DataProto):
@@ -315,7 +399,7 @@ class DataParallelPPOActor(BasePPOActor):
                         loss_mask = data['loss_mask']
                     else:
                         print("DEBUG: warning, loss_mask not found in actor update")
-                        loss_mask= data["attention_mask"]
+                        loss_mask=data["attention_mask"]
                     response_mask = loss_mask[:, -response_length:]
                     old_log_prob = data['old_log_probs']
                     advantages = data['advantages']
@@ -356,96 +440,16 @@ class DataParallelPPOActor(BasePPOActor):
                         loss = policy_loss / self.gradient_accumulation
                     loss.backward()
 
-                    # 记录第一次更新的指标
-                    first_metrics = {
+                    data = {
                         'actor/entropy_loss': entropy_loss.detach().item(),
                         'actor/pg_loss': pg_loss.detach().item(),
                         'actor/pg_clipfrac': pg_clipfrac.detach().item(),
                         'actor/ppo_kl': ppo_kl.detach().item(),
                     }
-                    append_to_dict(metrics, first_metrics)
+                    append_to_dict(metrics, data)
 
                 grad_norm = self._optimizer_step()
-                metrics['actor/grad_norm'] = grad_norm.detach().item()
-                print(f"[DEBUG] FIRST update COMPLETED with grad_norm: {grad_norm}")
-                print(f"[DEBUG] Model parameters have been updated after first step")
-                
-                # Second update with the same mini-batch (if enabled)
-                if getattr(self.config, 'off_policy_multi_step', False):
-                    print("="*100)
-                    print(f"[DEBUG] Starting SECOND complete update for mini-batch {batch_idx}")
-                    print(f"[DEBUG] Using same data but updated model parameters from first step")
-                    print("="*100)
-                    
-                    if has_multi_modal_inputs:
-                        second_micro_batches = mini_batch.select(select_keys, non_tensor_select_keys).chunk(num_micro_batches)
-                    elif self.config.use_dynamic_bsz:
-                        second_micro_batches, _ = rearrange_micro_batches(batch=mini_batch, max_token_len=max_token_len)
-                    else:
-                        second_micro_batches = mini_batch.split(self.config.ppo_micro_batch_size_per_gpu)
-                    
-                    self.actor_optimizer.zero_grad()
-                    
-                    for micro_data in second_micro_batches:
-                        # Support all hardwares
-                        if isinstance(micro_data, DataProto):
-                            micro_data = {**micro_data.batch.to(torch.cuda.current_device()), **micro_data.non_tensor_batch}
-                        else:
-                            micro_data = micro_data.to(torch.cuda.current_device())
-                        
-                        responses = micro_data['responses']
-                        response_length = responses.size(1)
-                        
-                        if "loss_mask" in micro_data:
-                            loss_mask = micro_data['loss_mask']
-                        else:
-                            loss_mask = micro_data["attention_mask"]
-                        response_mask = loss_mask[:, -response_length:]
-                        
-                        # Use original old_log_probs directly from micro_data for second update
-                        old_log_prob = micro_data['old_log_probs']
-                        advantages = micro_data['advantages']
-                        clip_ratio = self.config.clip_ratio
-                        entropy_coeff = self.config.entropy_coeff
-
-                        # Forward pass for second update (compute new log_prob)
-                        entropy, log_prob = self._forward_micro_batch(micro_batch=micro_data, temperature=temperature)
-
-                        pg_loss, pg_clipfrac, ppo_kl = core_algos.compute_policy_loss(old_log_prob=old_log_prob,
-                                                                                      log_prob=log_prob,
-                                                                                      advantages=advantages,
-                                                                                      eos_mask=response_mask,
-                                                                                      cliprange=clip_ratio)
-                        entropy_loss = verl_F.masked_mean(entropy, response_mask)
-                        policy_loss = pg_loss - entropy_loss * entropy_coeff
-
-                        if self.config.use_kl_loss:
-                            ref_log_prob = micro_data['ref_log_prob']
-                            kld = core_algos.kl_penalty(logprob=log_prob,
-                                                        ref_logprob=ref_log_prob,
-                                                        kl_penalty=self.config.kl_loss_type)
-                            kl_loss = masked_mean(kld, response_mask)
-                            policy_loss = policy_loss + kl_loss * self.config.kl_loss_coef
-                            metrics['actor/kl_loss_second'] = kl_loss.detach().item()
-
-                        if self.config.use_dynamic_bsz:
-                            loss = policy_loss * (len(micro_data) / self.config.ppo_mini_batch_size)
-                        else:
-                            loss = policy_loss / self.gradient_accumulation
-                        loss.backward()
-
-                        # 记录第二次更新的指标
-                        second_metrics = {
-                            'actor/entropy_loss_second': entropy_loss.detach().item(),
-                            'actor/pg_loss_second': pg_loss.detach().item(),
-                            'actor/pg_clipfrac_second': pg_clipfrac.detach().item(),
-                            'actor/ppo_kl_second': ppo_kl.detach().item(),
-                        }
-                        append_to_dict(metrics, second_metrics)
-                    
-                    grad_norm_second = self._optimizer_step()
-                    metrics['actor/grad_norm_second'] = grad_norm_second.detach().item()
-                    print(f"[DEBUG] SECOND update COMPLETED with grad_norm: {grad_norm_second}")
-                    print(f"[DEBUG] Model parameters have been updated after second step")
+                data = {'actor/grad_norm': grad_norm.detach().item()}
+            append_to_dict(metrics, data)
         self.actor_optimizer.zero_grad()
         return metrics
