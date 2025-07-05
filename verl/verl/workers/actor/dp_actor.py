@@ -75,12 +75,6 @@ class DataParallelPPOActor(BasePPOActor):
             position_ids = micro_batch['position_ids']
             
             
-            #DEBUG
-            # print(f"[DEBUG] input_ids.shape: {input_ids.shape}")
-            # print(f"[DEBUG] attention_mask.shape: {attention_mask.shape}")
-            # print(f"[DEBUG] position_ids.shape: {position_ids.shape}")
-            # print(f"[DEBUG] batch_size, seqlen: {batch_size} , {seqlen}")
-            
             
             if position_ids.dim() == 3:  # qwen2vl mrope
                 position_ids = position_ids.transpose(0, 1)  # (bsz, 3, seqlen) -> (3, bsz, seqlen)
@@ -263,6 +257,9 @@ class DataParallelPPOActor(BasePPOActor):
         # 直接使用token_level_rewards字段进行筛选
         rewards = data.batch['token_level_rewards']
         
+        print(f"[DEBUG] Original data.batch.batch_size: {data.batch.batch_size}")
+        print(f"[DEBUG] rewards tensor shape: {rewards.shape}")
+        
         # 计算每个trajectory的reward sum
         if rewards.dim() == 2:  # (batch_size, response_length)
             reward_sums = rewards.sum(dim=1)  # shape: (batch_size,)
@@ -271,6 +268,10 @@ class DataParallelPPOActor(BasePPOActor):
         
         batch_size = reward_sums.size(0)
         select_size = max(1, batch_size // 4)  # 确保至少选择1个
+        
+        print(f"[DEBUG] Actual batch_size from reward_sums: {batch_size}")
+        print(f"[DEBUG] select_size (batch//4): {select_size}")
+        print(f"[DEBUG] Total selected will be: {select_size * 2}")
         
         # 获取最低和最高reward的indices
         _, sorted_indices = torch.sort(reward_sums)
@@ -326,7 +327,6 @@ class DataParallelPPOActor(BasePPOActor):
         # 检查是否启用数据筛选
         use_filtering = getattr(self.config, 'filtering', False)
         # breakpoint()
-        use_filtering = True
         if use_filtering:
             print(f"[DEBUG] Data filtering enabled, original batch size: {data.batch.batch_size[0] if hasattr(data.batch, 'batch_size') else 'unknown'}")
             # 检查是否有token_level_rewards字段
@@ -351,7 +351,9 @@ class DataParallelPPOActor(BasePPOActor):
             select_keys.append('ref_log_prob')
         batch = data.select(batch_keys=select_keys).batch
         has_multi_modal_inputs = 'multi_modal_inputs' in data.non_tensor_batch.keys()
-
+        print('='*100)
+        print(f"[DEBUG] batch size: {len(batch)}")
+        print('='*100)
         # Split to make minibatch iterator for updating the actor
         # See PPO paper for details. https://arxiv.org/abs/1707.06347
         if has_multi_modal_inputs:
