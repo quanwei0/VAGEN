@@ -148,7 +148,7 @@ def compute_advantage(
     num_repeat=1,
     high_level_gamma=1.0,
     high_level_lam=1.0,
-    turn_level_weight=0.1
+    turn_level_weight=0.1,
     turn_reward_aggregation='sparse'
 ):
     # prepare response group
@@ -1278,7 +1278,6 @@ class RayPPOTrainer(object):
                                                   high_level_gamma=self.config.algorithm.high_level_gamma,
                                                   high_level_lam=self.config.algorithm.high_level_lam,
                                                   turn_level_weight=self.config.algorithm.turn_level_weight,
-                                                  high_level_lam=self.config.algorithm.high_level_lam,
                                                   turn_reward_aggregation=self.config.algorithm.get('turn_reward_aggregation', 'sparse'),
                                                   )
 

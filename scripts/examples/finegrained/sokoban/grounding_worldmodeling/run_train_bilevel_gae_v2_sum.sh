@@ -36,8 +36,11 @@ python -m vagen.env.create_dataset \
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
     algorithm.adv_estimator=bi_level_gae_v2 \
-    algorithm.high_level_gamma=0.95 \
-    +algorithm.high_level_lam=1 \
+    algorithm.high_level_gamma=1 \
+    algorithm.high_level_lam=1 \
+    algorithm.gamma=0.99 \
+    algorithm.lam=1 \
+    algorithm.turn_level_weight=0.1 \
     +algorithm.turn_reward_aggregation=sum \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
@@ -50,7 +53,7 @@ python3 -m vagen.trainer.main_ppo \
     actor_rollout_ref.model.path=Qwen/Qwen2.5-VL-3B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
-    actor_rollout_ref.actor.ppo_mini_batch_size=32 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=64 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
@@ -81,7 +84,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-v2-sum \
+    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-v2-sum-b64_gamma0.99 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
