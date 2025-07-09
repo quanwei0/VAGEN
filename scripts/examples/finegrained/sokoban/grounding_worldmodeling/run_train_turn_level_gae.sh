@@ -33,11 +33,16 @@ python -m vagen.env.create_dataset \
     --train_path data/$EXPERIMENT_NAME/train.parquet \
     --test_path data/$EXPERIMENT_NAME/test.parquet
 
+python -m vagen.server.server server.port=$PORT use_state_reward=False > server.log 2>&1 &
+
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
     algorithm.adv_estimator=turn_wise_gae \
-    algorithm.high_level_gamma=0.95 \
+    algorithm.high_level_gamma=1 \
     algorithm.high_level_lam=1 \
+    algorithm.gamma=1 \
+    algorithm.lam=1 \
+    +algorithm.turn_reward_aggregation=sum \
     algorithm.turn_level_weight=0.1 \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
@@ -56,8 +61,8 @@ python3 -m vagen.trainer.main_ppo \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=mse \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
-    actor_rollout_ref.actor.fsdp_config.param_offload=True \
-    actor_rollout_ref.actor.fsdp_config.optimizer_offload=True \
+    actor_rollout_ref.actor.fsdp_config.param_offload=False \
+    actor_rollout_ref.actor.fsdp_config.optimizer_offload=False \
     actor_rollout_ref.rollout.log_prob_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.rollout.tensor_model_parallel_size=4 \
     actor_rollout_ref.rollout.name=vllm \
