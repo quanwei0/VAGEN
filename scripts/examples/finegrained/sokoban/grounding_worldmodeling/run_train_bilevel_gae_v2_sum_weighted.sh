@@ -85,7 +85,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-v2-sum-b64_gamma0.99_0.001entropy \
+    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-weighted-sum-b64_gamma0.99_0.1 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
