@@ -3,10 +3,8 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 MODEL_PATH="/code/hongpaul-sandbox/temp/VAGEN/VAGEN/Qwen/Qwen2.5-VL-3B-Instruct"
 export WANDB_API_KEY=9b47d200bb9214329aaa8028cd21e973ed22e8ef
-# Interactive input for port and CUDA devices
-PORT=${PORT_INPUT:-4998}
-
-CUDA_DEVICES=${CUDA_DEVICES:-4,5,6,7}
+PORT=${PORT_INPUT:-5000}
+CUDA_DEVICES=${CUDA_DEVICES:-0,1,2,3}
 
 export CUDA_VISIBLE_DEVICES=$CUDA_DEVICES
 
@@ -21,7 +19,6 @@ echo "Experiment name: $EXPERIMENT_NAME"
 echo "Using port: $PORT"
 echo "Using CUDA devices: $CUDA_DEVICES"
 
-python -m vagen.server.server server.port=$PORT use_state_reward=False > server.log 2>&1 &
 # Create directories if they don't exist
 mkdir -p "data/$EXPERIMENT_NAME"
 
@@ -31,9 +28,10 @@ python -m vagen.env.create_dataset \
     --train_path data/$EXPERIMENT_NAME/train.parquet \
     --test_path data/$EXPERIMENT_NAME/test.parquet
 
+python -m vagen.server.server server.port=$PORT use_state_reward=False > server.log 2>&1 &
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=weighted_gae \
+    algorithm.adv_estimator=bi_level_gae_v2 \
     algorithm.high_level_gamma=1 \
     algorithm.high_level_lam=1 \
     algorithm.gamma=0.99 \
@@ -83,7 +81,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.1_weighted_weight_0.1_seed_1 \
+    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.001_entropy_weight_0.1 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
@@ -102,13 +100,14 @@ python3 -m vagen.trainer.main_ppo \
     rollout_manager.base_url=http://localhost:$PORT \
     2>&1 | tee $EXPERIMENT_NAME.log
 
+
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=weighted_gae \
+    algorithm.adv_estimator=bi_level_gae_v2 \
     algorithm.high_level_gamma=1 \
     algorithm.high_level_lam=1 \
     algorithm.gamma=0.99 \
     algorithm.lam=1 \
-    algorithm.turn_level_weight=0.1 \
+    algorithm.turn_level_weight=0.2 \
     +algorithm.turn_reward_aggregation=sum \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
@@ -153,7 +152,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.1_weighted_weight_0.1_seed_2 \
+    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.001_entropy_weight_0.2 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
@@ -172,13 +171,14 @@ python3 -m vagen.trainer.main_ppo \
     rollout_manager.base_url=http://localhost:$PORT \
     2>&1 | tee $EXPERIMENT_NAME.log
 
+
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=weighted_gae \
+    algorithm.adv_estimator=bi_level_gae_v2 \
     algorithm.high_level_gamma=1 \
     algorithm.high_level_lam=1 \
     algorithm.gamma=0.99 \
     algorithm.lam=1 \
-    algorithm.turn_level_weight=0.1 \
+    algorithm.turn_level_weight=0.15 \
     +algorithm.turn_reward_aggregation=sum \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
@@ -223,7 +223,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.1_weighted_weight_0.1_seed_3 \
+    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.001_entropy_weight_0.15 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
@@ -242,13 +242,14 @@ python3 -m vagen.trainer.main_ppo \
     rollout_manager.base_url=http://localhost:$PORT \
     2>&1 | tee $EXPERIMENT_NAME.log
 
+
 python3 -m vagen.trainer.main_ppo \
-    algorithm.adv_estimator=weighted_gae \
+    algorithm.adv_estimator=bi_level_gae_v2 \
     algorithm.high_level_gamma=1 \
     algorithm.high_level_lam=1 \
     algorithm.gamma=0.99 \
     algorithm.lam=1 \
-    algorithm.turn_level_weight=0.1 \
+    algorithm.turn_level_weight=0.05 \
     +algorithm.turn_reward_aggregation=sum \
     data.train_files=data/$EXPERIMENT_NAME/train.parquet \
     data.val_files=data/$EXPERIMENT_NAME/test.parquet \
@@ -293,7 +294,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.1_weighted_weight_0.1_seed_4 \
+    trainer.experiment_name=mhong-bilevel-gae-v2-sum-b64_gamma0.99_0.001_entropy_weight_0.05 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
