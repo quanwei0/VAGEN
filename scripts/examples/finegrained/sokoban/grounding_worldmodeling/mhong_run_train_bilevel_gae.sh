@@ -11,8 +11,8 @@ export WANDB_ENTITY="rl_agent"
 # export TRANSFORMERS_CACHE="/qumulo/float3/saved_models"
 
 # Interactive input for port and CUDA devices
-PORT=${PORT_INPUT:-5000}
-CUDA_DEVICES=${CUDA_DEVICES:-0,1,2,3}
+PORT=${PORT_INPUT:-4999}
+CUDA_DEVICES=${CUDA_DEVICES:-4,5,6,7}
 
 export CUDA_VISIBLE_DEVICES=$CUDA_DEVICES
 
@@ -38,12 +38,12 @@ python -m vagen.env.create_dataset \
 
 python -m vagen.server.server server.port=$PORT use_state_reward=False > server.log 2>&1 &
 
+# Then start the training
 for i in {1..5}; do
     echo "Running PPO training iteration $i"
-
     python3 -m vagen.trainer.main_ppo \
-        algorithm.adv_estimator=masked_gae \
-        algorithm.high_level_gamma=1 \
+        algorithm.adv_estimator=bi_level_gae \
+        algorithm.high_level_gamma=0.95 \
         algorithm.high_level_lam=1 \
         algorithm.gamma=1 \
         algorithm.lam=1 \
@@ -91,7 +91,7 @@ for i in {1..5}; do
         trainer.critic_warmup=0 \
         trainer.logger=['console','wandb'] \
         trainer.project_name='vagen_new' \
-        trainer.experiment_name=mhong-maksed-gae-BatchSize128-MiniBatch32-seed-${i} \
+        trainer.experiment_name=mhong-bilevel-gae-BatchSize128-MiniBatch32-seed-${i} \
         trainer.n_gpus_per_node=4 \
         trainer.nnodes=1 \
         trainer.save_freq=-1 \
