@@ -1,3 +1,43 @@
+#!/bin/bash
+# set -e  # Exit immediately if a command exits with a non-zero status
+
+# MODEL_PATH="/code/hongpaul-sandbox/temp/VAGEN/VAGEN/Qwen/Qwen2.5-VL-3B-Instruct"
+MODEL_PATH="/qumulo/float3/saved_models/models--Qwen--Qwen2.5-VL-3B-Instruct/snapshots/66285546d2b821cf421d4f5eb2576359d3770cd3"
+export WANDB_API_KEY="9b47d200bb9214329aaa8028cd21e973ed22e8ef"
+export WANDB_ENTITY="rl_agent"
+export REQUESTS_CA_BUNDLE=/usr/local/share/ca-certificates/gehealthcarerootca1.crt
+export SSL_CERT_FILE=/usr/local/share/ca-certificates/gehealthcarerootca1.crt
+export HF_HOME="/qumulo/float3/saved_models"
+export TRANSFORMERS_CACHE="/qumulo/float3/saved_models"
+
+# Interactive input for port and CUDA devices
+PORT=${PORT_INPUT:-5000}
+CUDA_DEVICES=${CUDA_DEVICES:-0,1,2,3}
+
+export CUDA_VISIBLE_DEVICES=$CUDA_DEVICES
+
+# Get the directory of the script
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Extract experiment name from the path
+# This will take the last 3 parts of the path: format/sokoban/free_think
+EXPERIMENT_NAME=$(echo $SCRIPT_DIR | rev | cut -d'/' -f1-3 | rev | tr '/' '-')
+echo "Experiment name: $EXPERIMENT_NAME"
+
+echo "Using port: $PORT"
+echo "Using CUDA devices: $CUDA_DEVICES"
+
+# Create directories if they don't exist
+mkdir -p "data/$EXPERIMENT_NAME"
+
+# First create the dataset
+python -m vagen.env.create_dataset \
+    --yaml_path $SCRIPT_DIR/env_config.yaml \
+    --train_path data/$EXPERIMENT_NAME/train.parquet \
+    --test_path data/$EXPERIMENT_NAME/test.parquet
+
+python -m vagen.server.server server.port=$PORT use_state_reward=False > server.log 2>&1 &
+
 for i in {1..5}; do
     echo "Running PPO training iteration $i"
 
