@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e  # Exit immediately if a command exits with a non-zero status
 
-export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
+# export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 export WANDB_ENTITY="rl_agent"
 
 # Interactive input for port and CUDA devices
@@ -50,7 +50,7 @@ python3 -m vagen.trainer.main_ppo \
     actor_rollout_ref.model.path=Qwen/Qwen2.5-VL-3B-Instruct \
     actor_rollout_ref.actor.optim.lr=1e-6 \
     actor_rollout_ref.model.use_remove_padding=True \
-    actor_rollout_ref.actor.ppo_mini_batch_size=32 \
+    actor_rollout_ref.actor.ppo_mini_batch_size=64 \
     actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=1 \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
@@ -81,7 +81,7 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=qw-finegrained-sokoban-grounding_worldmodeling-bilevel-gae \
+    trainer.experiment_name=zxn-finegrained-sokoban-grounding_worldmodeling-bilevel-gae-b64 \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
