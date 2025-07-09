@@ -3,7 +3,7 @@ set -e  # Exit immediately if a command exits with a non-zero status
 
 # export WANDB_API_KEY="810f91e58aa0fd1d03b11c60b0d1cffbb1d941f4"
 # export WANDB_ENTITY="rl_agent"
-
+export WANDB_API_KEY=9b47d200bb9214329aaa8028cd21e973ed22e8ef
 # Interactive input for port and CUDA devices
 read -p "Enter port number (default: 5000): " PORT_INPUT
 PORT=${PORT_INPUT:-5000}
@@ -27,6 +27,7 @@ echo "Using CUDA devices: $CUDA_DEVICES"
 # Create directories if they don't exist
 mkdir -p "data/$EXPERIMENT_NAME"
 
+python -m vagen.server.server server.port=$PORT use_state_reward=False > server.log 2>&1 &
 # First create the dataset
 python -m vagen.env.create_dataset \
     --yaml_path $SCRIPT_DIR/env_config.yaml \
