@@ -311,6 +311,7 @@ def compute_weighted_cross_level_gae_advantage_return(
     high_level_lam: float,
     reward_mask: torch.Tensor,
     turn_level_weight: float,
+    turn_reward_aggregation="sparse",
 ):
     """Modified GAE calculation that compute two level of advantage and return:
     high level: per-turn wise
@@ -366,7 +367,13 @@ def compute_weighted_cross_level_gae_advantage_return(
             for i in range(len(turn_start_pos) - 1, -1, -1):
                 curr_pos = turn_start_pos[i]
                 curr_turn_reward_pos = reward_pos[i]
-                
+
+                if turn_reward_aggregation == "sparse":
+                    curr_turn_reward = token_level_rewards[b, curr_turn_reward_pos]
+                elif turn_reward_aggregation == "average":
+                    curr_turn_reward = token_level_rewards[b, curr_turn_reward_pos] + token_level_rewards[b, curr_pos: curr_turn_reward_pos].mean()
+                elif turn_reward_aggregation == "sum":
+                    curr_turn_reward = token_level_rewards[b, curr_pos:curr_turn_reward_pos+1].sum()
                 # Get the next value
                 if i < len(turn_start_pos) - 1:
                     # Next valid position
@@ -374,14 +381,14 @@ def compute_weighted_cross_level_gae_advantage_return(
                     nextvalue = values[b, next_pos]
 
                     # Calculate delta using the next valid token
-                    delta = token_level_rewards[b, curr_turn_reward_pos] + high_level_gamma * nextvalue - values[b, curr_pos]
+                    delta = curr_turn_reward + high_level_gamma * nextvalue - values[b, curr_pos]
 
                 else:
                     # Last valid position
                     nextvalue = 0.0
 
                     # Calculate delta using the next valid token
-                    delta = token_level_rewards[b, curr_turn_reward_pos] + high_level_gamma * nextvalue - values[b, curr_pos]
+                    delta = curr_turn_reward + high_level_gamma * nextvalue - values[b, curr_pos]
 
                 # Update advantage estimate
                 lastgaelam = delta + high_level_gamma * high_level_lam * lastgaelam
