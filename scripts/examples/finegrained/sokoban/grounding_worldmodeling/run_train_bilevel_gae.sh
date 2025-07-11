@@ -38,7 +38,7 @@ python -m vagen.server.server server.port=$PORT use_state_reward=False > server.
 # Then start the training
 python3 -m vagen.trainer.main_ppo \
     algorithm.adv_estimator=bi_level_gae \
-    algorithm.high_level_gamma=1 \
+    algorithm.high_level_gamma=0.95 \
     algorithm.high_level_lam=1 \
     algorithm.gamma=1 \
     algorithm.lam=1 \

@@ -42,7 +42,7 @@ python -m vagen.server.server server.port=$PORT use_state_reward=False > server.
 for i in {1..5}; do
     echo "Running PPO training iteration $i"
     python3 -m vagen.trainer.main_ppo \
-        algorithm.adv_estimator=bi_level_gae_v2 \
+        algorithm.adv_estimator=weighted_gae \
         algorithm.high_level_gamma=0.95 \
         algorithm.high_level_lam=1 \
         algorithm.gamma=1 \
@@ -91,7 +91,7 @@ for i in {1..5}; do
         trainer.critic_warmup=0 \
         trainer.logger=['console','wandb'] \
         trainer.project_name='vagen_new' \
-        trainer.experiment_name=mhong-bilevel-gae-v2-sum-BatchSize128-MiniBatch32-seed-${i} \
+        trainer.experiment_name=mhong-weighted-gae-BatchSize128-MiniBatch32-seed-${i} \
         trainer.n_gpus_per_node=4 \
         trainer.nnodes=1 \
         trainer.save_freq=-1 \
