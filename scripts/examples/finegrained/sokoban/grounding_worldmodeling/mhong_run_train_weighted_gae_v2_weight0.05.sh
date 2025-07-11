@@ -48,7 +48,7 @@ for i in {1..5}; do
         algorithm.gamma=1 \
         algorithm.lam=1 \
         +algorithm.turn_reward_aggregation=sum \
-        algorithm.turn_level_weight=0.1 \
+        algorithm.turn_level_weight=0.05 \
         data.train_files=data/$EXPERIMENT_NAME/train.parquet \
         data.val_files=data/$EXPERIMENT_NAME/test.parquet \
         data.train_batch_size=128 \
@@ -91,7 +91,7 @@ for i in {1..5}; do
         trainer.critic_warmup=0 \
         trainer.logger=['console','wandb'] \
         trainer.project_name='vagen_new' \
-        trainer.experiment_name=mhong-weighted-gae-BatchSize128-MiniBatch32-seed-${i} \
+        trainer.experiment_name=mhong-weighted-gae-weight0.05-BatchSize128-MiniBatch32-seed-${i} \
         trainer.n_gpus_per_node=4 \
         trainer.nnodes=1 \
         trainer.save_freq=-1 \
