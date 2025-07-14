@@ -581,7 +581,7 @@ def compute_policy_loss(
         # Define a smooth mask in the range [1 - 2ε, 1 - ε] ∪ [1 + ε, 1 + 2ε]
         lower = 1.0 - cliprange
         upper = 1.0 + cliprange
-        lower_decay = 1.0 - 1.005 * cliprange  # 1 - 2ε
+        lower_decay = 1.0 - 1.5 * cliprange  # 1 - 2ε
         upper_decay = 1.0 + 2 * cliprange  # 1 + 2ε
 
         # Create smooth decay mask: multiplier ∈ [1, 0]
