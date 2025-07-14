@@ -39,7 +39,7 @@ python -m vagen.env.create_dataset \
 python -m vagen.server.server server.port=$PORT use_state_reward=False > server.log 2>&1 &
 
 # Then start the training
-for i in {1..5}; do
+for i in {1..3}; do
     echo "Running PPO training iteration $i"
     python3 -m vagen.trainer.main_ppo \
         algorithm.adv_estimator=bi_level_gae \
