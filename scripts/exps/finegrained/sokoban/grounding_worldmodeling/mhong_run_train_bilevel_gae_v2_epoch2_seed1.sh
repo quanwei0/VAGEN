@@ -1,8 +1,8 @@
 #!/bin/bash
 # set -e  # Exit immediately if a command exits with a non-zero status
 
-MODEL_PATH="/code/hongpaul-sandbox/temp/VAGEN/VAGEN/Qwen/Qwen2.5-VL-3B-Instruct"
-# MODEL_PATH="/qumulo/float3/saved_models/models--Qwen--Qwen2.5-VL-3B-Instruct/snapshots/66285546d2b821cf421d4f5eb2576359d3770cd3"
+# MODEL_PATH="/code/hongpaul-sandbox/temp/VAGEN/VAGEN/Qwen/Qwen2.5-VL-3B-Instruct"
+MODEL_PATH="/qumulo/float3/saved_models/models--Qwen--Qwen2.5-VL-3B-Instruct/snapshots/66285546d2b821cf421d4f5eb2576359d3770cd3"
 export WANDB_API_KEY="9b47d200bb9214329aaa8028cd21e973ed22e8ef"
 export WANDB_ENTITY="rl_agent"
 # export REQUESTS_CA_BUNDLE=/usr/local/share/ca-certificates/gehealthcarerootca1.crt
@@ -41,7 +41,7 @@ python -m vagen.server.server server.port=$PORT use_state_reward=False > server.
 # Then start the training
 for i in {1..3}; do
     echo "Running PPO training iteration $i"
-    python3 -m vagen.trainer.main_ppo \
+        python3 -m vagen.trainer.main_ppo \
         algorithm.adv_estimator=bi_level_gae \
         algorithm.high_level_gamma=0.95 \
         data.train_files=data/$EXPERIMENT_NAME/train.parquet \
@@ -87,12 +87,12 @@ for i in {1..3}; do
         trainer.critic_warmup=0 \
         trainer.logger=['console','wandb'] \
         trainer.project_name='vagen_new' \
-        trainer.experiment_name=mhong-bilevel-gae-v2-BatchSize128-MiniBatch32-Epoch2-softdetach-seed-${i} \
+        trainer.experiment_name=lcl_bilevel_ppo_epoch2_128_32_soft_detach_ratio_limited_low_level \
         trainer.n_gpus_per_node=4 \
         trainer.nnodes=1 \
         trainer.save_freq=-1 \
         trainer.test_freq=20 \
-        trainer.total_training_steps=500 \
+        trainer.total_training_steps=300 \
         rollout_manager.max_turns=3 \
         rollout_manager.window_size=5 \
         rollout_manager.use_multi_turn_reward=True \
