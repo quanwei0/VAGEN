@@ -22,6 +22,7 @@ sft/output/*
 sft/data/*
 sft_configs/
 models/
+!verl/models/
 
 # Distribution / packaging
 .Python
@@ -119,6 +120,8 @@ tests/e2e/toy_examples/deepspeed/synchronous/output.txt
 *.swp
 
 log*
+!verl/utils/logger/
+!verl/utils/logging_utils.py
 
 **logs
 
