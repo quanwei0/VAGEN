@@ -572,6 +572,9 @@ def compute_policy_loss(
     ratio = torch.exp(negative_approx_kl)
     ppo_kl = verl_F.masked_mean(-negative_approx_kl, eos_mask)
     if detach_ratio=='hard':
+        print("="*80)
+        print("[Debug] hard detach ratio and the cliprange is",cliprange)
+        print("="*80)
         # Detach ratio but still apply clipping
         ratio_detached = ratio.detach()
         clipped_ratio_detached = torch.clamp(ratio_detached, 1.0 - cliprange, 1.0 + cliprange)
@@ -617,6 +620,9 @@ def compute_policy_loss(
 
     else:
         # Standard PPO
+        print("="*80)
+        print("[Debug] normal detach ratio and the cliprange is",cliprange)
+        print("="*80)
         pg_losses1 = -advantages * ratio
         pg_losses2 = -advantages * torch.clamp(ratio, 1.0 - cliprange, 1.0 + cliprange)
 

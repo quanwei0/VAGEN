@@ -76,7 +76,7 @@ python3 -m vagen.trainer.main_ppo \
     actor_rollout_ref.actor.use_kl_loss=False \
     actor_rollout_ref.actor.kl_loss_coef=0.001 \
     actor_rollout_ref.actor.kl_loss_type=mse \
-    +actor_rollout_ref.actor.detach_ratio=soft \
+    +actor_rollout_ref.actor.detach_ratio=hard \
     actor_rollout_ref.model.enable_gradient_checkpointing=True \
     actor_rollout_ref.actor.fsdp_config.param_offload=True \
     actor_rollout_ref.actor.fsdp_config.optimizer_offload=True \
@@ -104,12 +104,12 @@ python3 -m vagen.trainer.main_ppo \
     trainer.critic_warmup=0 \
     trainer.logger=['console','wandb'] \
     trainer.project_name='vagen_new' \
-    trainer.experiment_name=lcl_bilevel_ppo_epoch2_128_32_soft_detach_ratio_limited_low_level \
+    trainer.experiment_name=lcl_bilevel_ppo_epoch2_128_32_hard_detach_ratio_limited_low_level \
     trainer.n_gpus_per_node=4 \
     trainer.nnodes=1 \
     trainer.save_freq=-1 \
     trainer.test_freq=20 \
-    trainer.total_training_steps=300 \
+    trainer.total_training_steps=400 \
     rollout_manager.max_turns=3 \
     rollout_manager.window_size=5 \
     rollout_manager.use_multi_turn_reward=True \
