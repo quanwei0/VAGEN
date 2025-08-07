@@ -254,11 +254,10 @@ class DataParallelPPOActor(BasePPOActor):
         self.actor_module.train()
 
         temperature = data.meta_info['temperature']  # temperature must be in the data.meta_info to avoid slient error
-
         if 'loss_mask' in data.batch.keys():
-            select_keys = ['responses', 'input_ids', 'attention_mask', 'position_ids', 'old_log_probs', 'advantages','loss_mask']
+            select_keys = ['responses', 'input_ids', 'attention_mask', 'position_ids', 'old_log_probs', 'advantages','loss_mask',"turn_indices"]
         else:
-            select_keys = ['responses', 'input_ids', 'attention_mask', 'position_ids', 'old_log_probs', 'advantages']
+            select_keys = ['responses', 'input_ids', 'attention_mask', 'position_ids', 'old_log_probs', 'advantages',"turn_indices"]
         if self.config.use_kl_loss:
             select_keys.append('ref_log_prob')
         batch = data.select(batch_keys=select_keys).batch
@@ -323,12 +322,17 @@ class DataParallelPPOActor(BasePPOActor):
                     entropy, log_prob = self._forward_micro_batch(micro_batch=data, temperature=temperature)
 
                     detach_ratio = getattr(self.config, 'detach_ratio', 'soft')
+                    importance_sampling_level = getattr(self.config, 'importance_sampling_level', 'token')
+                    turn_indices = data.get('turn_indices', None) if importance_sampling_level == 'turn' else None
+                    
                     pg_loss, pg_clipfrac, ppo_kl = core_algos.compute_policy_loss(old_log_prob=old_log_prob,
                                                                                   log_prob=log_prob,
                                                                                   advantages=advantages,
                                                                                   eos_mask=response_mask,
                                                                                   cliprange=clip_ratio,
-                                                                                  detach_ratio=detach_ratio)
+                                                                                  detach_ratio=detach_ratio,
+                                                                                  importance_sampling_level=importance_sampling_level,
+                                                                                  turn_indices=turn_indices)
                     # compute entropy loss from entropy
                     entropy_loss = verl_F.masked_mean(entropy, response_mask)
 

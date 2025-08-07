@@ -877,6 +877,53 @@ class RayPPOTrainer(object):
                                                     partitions=global_partition_lst,
                                                     prefix=logging_prefix)
         metrics.update(global_balance_stats)
+        
+    def _split_turn(self, batch: DataProto) -> DataProto:
+        loss_mask = batch.batch['loss_mask']
+        values = batch.batch['values']
+
+        turn_indices = []
+
+        for b in range(loss_mask.size(0)):
+            mask = loss_mask[b]
+            valid_response_length = values[b].nonzero(as_tuple=True)[0].shape[0] - 1
+
+            # Detect where a turn starts: when mask switches from 0 to 1
+            turn_end_pos = ((mask[1:] == 1) & (mask[:-1] == 0)).nonzero(as_tuple=True)[0]
+            turn_start_pos = turn_end_pos + 1
+
+            # Check if the very first token is part of a turn
+            if mask[0] == 1:
+                turn_start_pos = torch.cat([torch.tensor([0], device=mask.device), turn_start_pos])
+
+            # Append last token as final turn end if not already included
+
+            turn_end_pos = torch.cat([turn_end_pos, torch.tensor([valid_response_length - 1], device=mask.device)])
+
+            # Build list of (start, end) pairs
+            indices = list(zip(turn_start_pos.tolist(), turn_end_pos.tolist()))
+            turn_indices.append(indices)
+
+        # Save to batch as tensor matrix for later use (e.g., in GAE)
+        # Create a batch_size x 20 matrix initialized with -1
+        batch_size = len(turn_indices)
+        max_indices = 20  # Should be enough for most cases (3 turns = max 6 indices, with buffer)
+        turn_indices_tensor = torch.full((batch_size, max_indices), -1, dtype=torch.long, device=loss_mask.device)
+        
+        # Fill in the actual turn indices for each sample
+        
+        for b, indices in enumerate(turn_indices):
+            flattened_indices = []
+            for start, end in indices:
+                flattened_indices.extend([start, end])
+            
+            # Fill the tensor with actual indices
+            num_indices = min(len(flattened_indices), max_indices)
+            turn_indices_tensor[b, :num_indices] = torch.tensor(flattened_indices[:num_indices], dtype=torch.long, device=loss_mask.device)
+        
+        batch.batch['turn_indices'] = turn_indices_tensor
+
+        return batch
 
     def fit(self):
         """

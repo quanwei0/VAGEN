@@ -1,0 +1,43 @@
+# Turn-level Importance Sampling Configuration Example
+# Add these settings to your actor configuration
+
+actor_rollout_ref:
+  actor:
+    # Enable turn-level importance sampling
+    importance_sampling_level: turn  # Options: 'token', 'sequence', 'partial_sequence', 'turn'
+    
+    # Other existing configurations...
+    strategy: fsdp
+    optim:
+      lr: 1e-6
+    ppo_mini_batch_size: 4
+    ppo_micro_batch_size_per_gpu: 1
+    use_kl_loss: false
+    kl_loss_coef: 0.001
+    kl_loss_type: mse
+    
+    # PPO settings
+    clip_ratio: 0.2
+    entropy_coeff: 0.01
+    detach_ratio: soft  # Options: 'soft', 'hard', or None
+    
+    # FSDP settings
+    fsdp_config:
+      param_offload: true
+      optimizer_offload: true
+
+# Note: When using importance_sampling_level: 'turn', make sure:
+# 1. rollout_manager.use_loss_mask is True
+# 2. The _split_turn function is properly generating turn_indices
+# 3. turn_indices are included in the batch data
+
+rollout_manager:
+  use_loss_mask: true
+  use_gae_mask: true
+  special_token_for_loss_mask: ['<|box_start|>', '<|box_end|>']
+
+# Example usage scenarios:
+# - 'token': Traditional token-level importance sampling (default)
+# - 'sequence': All tokens in sequence share same importance weight
+# - 'partial_sequence': Cumulative average importance weight up to each position
+# - 'turn': All tokens within same turn share same importance weight

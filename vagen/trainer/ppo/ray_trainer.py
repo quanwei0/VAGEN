@@ -104,6 +104,7 @@ import torch
 from verl.utils.torch_functional import masked_mean
 
 
+
 def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, kl_penalty='kl'):
     responses = data.batch['responses']
     response_length = responses.size(1)
@@ -500,7 +501,80 @@ class RayPPOTrainer(object):
         self._create_dataloader()
         self.test_rollout_config=None
         self.test_rollout_manager=None
+    def _find_consecutive_ones_segments(self, tensor_1d):
+        """
+        找出1D tensor中连续1段的起点和终点
         
+        Args:
+            tensor_1d: 1D tensor，包含0和1
+        
+        Returns:
+            starts: 起点位置列表
+            ends: 终点位置列表 (包含该位置)
+        """
+        if len(tensor_1d) == 0:
+            return [], []
+        # 在前后添加0，方便检测边界
+        padded = torch.cat([torch.tensor([0], device=tensor_1d.device), tensor_1d, torch.tensor([0], device=tensor_1d.device)])
+        # 计算相邻元素的差值
+        diff = padded[1:] - padded[:-1]
+        starts = torch.where(diff == 1)[0]
+        ends = torch.where(diff == -1)[0] - 1
+        return starts.tolist(), ends.tolist()
+
+    def _split_turn(self, batch: DataProto) -> DataProto:
+        loss_mask = batch.batch['loss_mask']        
+        turn_indices = []
+
+        for b in range(loss_mask.size(0)):
+            mask = loss_mask[b]
+            
+            # 获取有效长度（最后一个非零位置）
+            nonzero_positions = mask.nonzero(as_tuple=True)[0]
+            if len(nonzero_positions) == 0:
+                # 如果没有非零元素，跳过这个样本
+                turn_indices.append([])
+                continue
+            
+            valid_response_length = nonzero_positions[-1].item() + 1
+            
+            # 🎯 使用优化的连续1段检测算法
+            # 只处理有效长度内的mask
+            valid_mask = mask[:valid_response_length]
+            starts, ends = self._find_consecutive_ones_segments(valid_mask)
+            
+            # 构建(start, end)对的列表
+            indices = list(zip(starts, ends))
+            turn_indices.append(indices)
+            
+            # 🔍 调试信息（可选，生产环境可删除）
+            if len(indices) > 0:
+                print(f"样本 {b}: mask长度={valid_response_length}, 连续1段={indices}")
+            else:
+                print(f"样本 {b}: 没有找到连续1段")
+
+        # 存储到tensor矩阵中，格式与之前保持一致
+        batch_size = len(turn_indices)
+        max_indices = 20  # 每个样本最多存储20个索引值
+        turn_indices_tensor = torch.full((batch_size, max_indices), -1, dtype=torch.long, device=loss_mask.device)
+        
+        # 将每个样本的(start, end)对展平存储为[start1, end1, start2, end2, ...]
+        for b, indices in enumerate(turn_indices):
+            flattened_indices = []
+            for start, end in indices:
+                flattened_indices.extend([start, end])
+            
+            # 填充到tensor中
+            num_indices = min(len(flattened_indices), max_indices)
+            if num_indices > 0:
+                turn_indices_tensor[b, :num_indices] = torch.tensor(
+                    flattened_indices[:num_indices], 
+                    dtype=torch.long, 
+                    device=loss_mask.device
+                )
+        
+        batch.batch['turn_indices'] = turn_indices_tensor
+        return batch
 
     def _validate_config(self):
         config = self.config
@@ -1123,9 +1197,6 @@ class RayPPOTrainer(object):
                 batch.non_tensor_batch['uid'] = np.array([str(uuid.uuid4()) for _ in range(len(batch.batch))],dtype=object)
                 batch = batch.repeat(repeat_times=self.config.rollout_manager.n_trajectory, interleave=True)
                 
-                    
-                
-
                 with _timer('step', timing_raw):
                     # generate a batch
                     with _timer('gen', timing_raw):
@@ -1198,7 +1269,7 @@ class RayPPOTrainer(object):
                                                   lam=self.config.algorithm.lam,
                                                   num_repeat=self.config.actor_rollout_ref.rollout.n,
                                                   high_level_gamma=self.config.algorithm.high_level_gamma,)
-
+                        batch=self._split_turn(batch)
                     # update critic
                     if self.use_critic:
                         with _timer('update_critic', timing_raw):
